@@ -28,6 +28,8 @@ feeds:
     url: https://github.com/qosmio/packages-extra
   - name: sqm_nss
     url: https://github.com/JuliusBairaktaris/sqm-scripts-nss
+  - name: obsy
+    url: https://github.com/obsy/packages
 
 # Release publishing settings.
 release:
