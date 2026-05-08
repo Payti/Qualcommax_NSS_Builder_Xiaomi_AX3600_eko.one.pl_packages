@@ -110,7 +110,7 @@ Enabled NSS modules: `kmod-qca-nss-drv`, `kmod-qca-nss-drv-bridge-mgr`, `kmod-qc
 
 ### Flashing
 
-Latest release: [Releases page](https://github.com/JuliusBairaktaris/Qualcommax_NSS_Builder/releases/latest). Grab the `*-sysupgrade.bin` and:
+Latest release: [Releases page](https://github.com/Payti/Qualcommax_NSS_Builder_Xiaomi_AX3600_eko.one.pl_packages/releases/latest). Grab the `*-sysupgrade.bin` and:
 
 ```sh
 sysupgrade -n /tmp/openwrt-qualcommax-ipq807x-xiaomi_ax3600-squashfs-sysupgrade.bin
