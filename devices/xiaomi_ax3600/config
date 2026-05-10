@@ -148,11 +148,11 @@ CONFIG_PACKAGE_urngd=y
 # CONFIG_PACKAGE_wpad-basic-mbedtls is not set
 CONFIG_PACKAGE_wpad-mbedtls=y
 #
-## LuCI + moje pakiety dodane
+## LuCI + my packages
 #
 CONFIG_LUCI_LANG_pl=y
-# CONFIG_PACKAGE_kmod-ath10k-smallbuffers is not set
 CONFIG_PACKAGE_ipq-wifi-xiaomi_ax3600=y
+# CONFIG_PACKAGE_kmod-ath10k-smallbuffers is not set
 CONFIG_PACKAGE_kmod-ath10k-ct-smallbuffers=y
 CONFIG_PACKAGE_ath10k-firmware-qca9887-ct=y
 CONFIG_PACKAGE_libubox=y
@@ -188,12 +188,11 @@ CONFIG_PACKAGE_luci-ssl=y
 CONFIG_PACKAGE_luci-theme-bootstrap=y
 CONFIG_PACKAGE_luci-app-statistics=y
 CONFIG_PACKAGE_luci-app-nlbwmon=y
-CONFIG_PACKAGE_luci-mod-dashboard=y
 CONFIG_PACKAGE_luci-app-usteer=y
 CONFIG_PACKAGE_luci-app-vnstat2=y
 CONFIG_PACKAGE_luci-app-statistics=y
 #
-## PL
+## Language LuCI: PL
 #
 CONFIG_PACKAGE_luci-i18n-base-pl=y
 CONFIG_PACKAGE_luci-i18n-adblock-pl=y
