@@ -191,11 +191,9 @@ CONFIG_PACKAGE_luci-app-nlbwmon=y
 CONFIG_PACKAGE_luci-app-usteer=y
 CONFIG_PACKAGE_luci-app-vnstat2=y
 CONFIG_PACKAGE_luci-app-statistics=y
-# CONFIG_PACKAGE_luci-app-plugins is not set
 #
 ## Language LuCI: PL
 #
-# CONFIG_PACKAGE_luci-i18n-plugins-pl is not set
 CONFIG_PACKAGE_luci-i18n-base-pl=y
 CONFIG_PACKAGE_luci-i18n-adblock-pl=y
 CONFIG_PACKAGE_luci-i18n-attendedsysupgrade-pl=y
