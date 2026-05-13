@@ -150,7 +150,8 @@ const createSection = (title, data) => {
 };
 
 return baseclass.extend({
-  title: "",
+  // Ustawienie jawnego tytułu sekcji LuCI
+  title: _('NSS'),
   load: () =>
     Promise.all([
       fs
@@ -165,7 +166,9 @@ return baseclass.extend({
       getThermalZones().then(processThermalZones),
     ]).then((data) => mergeData(data)),
   render: (data) => {
-    const loadSection = createSection(_("NSS"), { Load: data.Load });
+    // Ponieważ LuCI wyrenderuje teraz nagłówek "NSS" na samej górze,
+    // usuwamy wewnętrzny nagłówek H3 z sekcji NSS, aby nie dublować napisów.
+    const loadSection = createSection("", { Load: data.Load });
     const { Load, ...thermalData } = data;
     const tempSection = createSection(_("Thermal"), thermalData);
     return E("div", {}, [
