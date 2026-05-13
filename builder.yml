@@ -26,8 +26,8 @@ device: xiaomi_ax3600
 feeds:
 #  - name: qosmio
 #    url: https://github.com/qosmio/packages-extra
-  - name: status_nss
-    url: https://github.com/JuliusBairaktaris/packages-extra
+#  - name: status_nss
+#    url: https://github.com/JuliusBairaktaris/packages-extra
   - name: sqm_nss
     url: https://github.com/JuliusBairaktaris/sqm-scripts-nss
   - name: obsy
