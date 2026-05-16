@@ -92,7 +92,7 @@ Enabled NSS modules: `kmod-qca-nss-drv`, `kmod-qca-nss-drv-bridge-mgr`, `kmod-qc
 
 ### Security hardening
 
-- **OpenSSH** (Dropbear disabled) with post-quantum KEX (ML-KEM 768, sntrup761), AEAD ciphers only, ETM MACs, RSA min 3072
+- **Dropbear SSH** with default config
 - **Build hardening**: `PKG_ASLR_PIE_ALL`, `PKG_CC_STACKPROTECTOR_ALL`, `PKG_FORTIFY_SOURCE_3`, `PKG_RELRO_FULL`, `USE_SECCOMP`, `PKG_CHECK_FORMAT_SECURITY`
 - **Firewall**: WAN input/forward = DROP, HTTPS redirect, BCP38 anti-spoofing
 - **OQS provider** loaded into OpenSSL for hybrid post-quantum TLS
