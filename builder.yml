@@ -24,10 +24,6 @@ device: xiaomi_ax3600
 # Custom feeds appended to feeds.conf during build. Order matters.
 # Each entry becomes:  src-git <name> <url>
 feeds:
-#  - name: qosmio
-#    url: https://github.com/qosmio/packages-extra
-#  - name: status_nss
-#    url: https://github.com/JuliusBairaktaris/packages-extra
   - name: sqm_nss
     url: https://github.com/JuliusBairaktaris/sqm-scripts-nss
   - name: obsy
