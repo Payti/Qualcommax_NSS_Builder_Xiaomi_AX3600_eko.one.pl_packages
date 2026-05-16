@@ -181,6 +181,21 @@ jobs:
             echo "DISTRIB_DESCRIPTION='${OPENWRT_VERSION} (NSS build by @Payti)'" >> "$TARGET_RELEASE_FILE"
           fi
 
+          # 5. Wyświetlenie wartości zmiennych w logach kompilacji
+          echo "=================================================="
+          echo "RAW_VERSION:             $RAW_VERSION"
+          echo "DISTRIB_DESCRIPTION:     $DISTRIB_DESCRIPTION"
+          echo "OPENWRT_VERSION:         $OPENWRT_VERSION"
+          echo "CURRENT_BUILD_TIME:      $CURRENT_BUILD_TIME"
+          echo "CLEAN_VER:               $CLEAN_VER"
+          echo "VERSION_LINE:            $VERSION_LINE"
+          echo "VERSION_PADDING:         $VERSION_PADDING"
+          echo "DATE_LINE:               $DATE_LINE"
+          echo "DATE_PADDING:            $DATE_PADDING"
+          echo "FINAL_VERSION_ROW:       $FINAL_VERSION_ROW"
+          echo "FINAL_DATE_ROW:          $FINAL_DATE_ROW"
+          echo "=================================================="
+
       - name: Set reproducible-build env
         working-directory: openwrt
         run: |
