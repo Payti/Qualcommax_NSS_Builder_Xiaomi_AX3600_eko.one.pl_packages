@@ -144,16 +144,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 1. Wyciągnięcie oficjalnego i unikalnego ciągu wersji (np. OpenWrt SNAPSHOT, r0+33880-0e751b1cb2)
-          OPENWRT_VERSION=$(grep "DISTRIB_DESCRIPTION=" package/base-files/files/etc/openwrt_release | cut -d"'" -f2)
+          # 1. Bezpieczne wyciągnięcie wersji z pliku openwrt_release
+          RAW_VERSION=$(grep "DISTRIB_DESCRIPTION=" package/base-files/files/etc/openwrt_release || echo "DISTRIB_DESCRIPTION='OpenWrt SNAPSHOT'")
+          OPENWRT_VERSION=$(echo "$RAW_VERSION" | sed "s/DISTRIB_DESCRIPTION=//g" | tr -d "'\"")
           
-          # 2. Wygenerowanie aktualnej daty i godziny uruchomienia tego buildu w formacie UTC
+          # 2. Wygenerowanie aktualnej daty i godziny UTC
           CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
 
-          # 3. Dynamiczne formatowanie tekstu w pliku banner przy użyciu sed
+          # 3. Dynamiczne formatowanie tekstu w pliku banner
           if [ -f files/etc/banner ]; then
-            # Formatowanie tekstu do równej długości linii z dopełnieniem spacjami (dla zachowania ramek '|')
-            VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION#*, }"
+            # Wyciągamy samą końcówkę wersji (np. SNAPSHOT, rX+XXXXX)
+            CLEAN_VER="${OPENWRT_VERSION#OpenWrt }"
+            VERSION_LINE="OpenWrt ${CLEAN_VER}"
+            
+            # Budujemy pełne linie z oryginalnymi kreskami | na początku i końcu
             VERSION_PADDING=$(printf '%-74s' "| $VERSION_LINE")
             FINAL_VERSION_ROW="${VERSION_PADDING% }|"
 
@@ -161,17 +165,21 @@ jobs:
             DATE_PADDING=$(printf '%-74s' "| $DATE_LINE")
             FINAL_DATE_ROW="${DATE_PADDING% }|"
 
-            # Podmiana placeholderów w pliku banner
-            sed -i "s|.*VERSION_PLACEHOLDER.*|$FINAL_VERSION_ROW|g" files/etc/banner
-            sed -i "s|.*DATE_PLACEHOLDER.*|$FINAL_DATE_ROW|g" files/etc/banner
+            # Używamy separatora '#' w sed, dzięki czemu pionowe kreski | bezpiecznie trafią do pliku
+            sed -i "s#.*VERSION_PLACEHOLDER.*#$FINAL_VERSION_ROW#g" files/etc/banner
+            sed -i "s#.*DATE_PLACEHOLDER.*#$FINAL_DATE_ROW#g" files/etc/banner
             
-            echo "Successfully injected version ($OPENWRT_VERSION) and build time ($CURRENT_BUILD_TIME) into banner."
+            echo "Successfully injected version and build time into banner with '|' frames."
           else
             echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
           fi
 
-          # 4. Automatyczna modyfikacja informacji dla panelu WWW (LuCI)
-          sed -i "s|DISTRIB_DESCRIPTION='.*'|DISTRIB_DESCRIPTION='$OPENWRT_VERSION (NSS build by @Payti)'|g" package/base-files/files/etc/openwrt_release
+          # 4. Aktualizacja informacji dla panelu WWW (LuCI)
+          TARGET_RELEASE_FILE="package/base-files/files/etc/openwrt_release"
+          if [ -f "$TARGET_RELEASE_FILE" ]; then
+            sed -i '/DISTRIB_DESCRIPTION=/d' "$TARGET_RELEASE_FILE"
+            echo "DISTRIB_DESCRIPTION='${OPENWRT_VERSION} (NSS build by @Payti)'" >> "$TARGET_RELEASE_FILE"
+          fi
 
       - name: Set reproducible-build env
         working-directory: openwrt
