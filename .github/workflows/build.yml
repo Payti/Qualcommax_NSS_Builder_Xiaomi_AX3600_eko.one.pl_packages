@@ -161,7 +161,7 @@ jobs:
           if [ -f files/etc/banner ]; then
             # POPRAWKA: Używamy nowej zmiennej OPENWRT_VERSION_RAW zamiast nieistniejących GIT_REVISION/GIT_HASH
             VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW}"
-            
+
             # Dokładne wyrównanie do szerokości 75 znaków (od znaku '|' do drugiego '|' włącznie)
             # %-73s rezerwuje 73 znaki na tekst i spacje dopełniające
             VERSION_PADDING=$(printf '%-73s' "| $VERSION_LINE")
