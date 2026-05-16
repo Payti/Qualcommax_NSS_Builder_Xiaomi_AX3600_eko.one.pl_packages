@@ -92,7 +92,7 @@ jobs:
           } >>"$GITHUB_OUTPUT"
 
   build:
-    name: Build firmware
+    name: Build firmware (${{ matrix.nss_version }})
     needs: [config, check-updates]
     if: needs.check-updates.outputs.build_required == 'true'
     runs-on: ubuntu-latest
@@ -100,13 +100,20 @@ jobs:
     permissions:
       contents: write
       actions: read
+    
+    # KROK A: Definicja Macierzy dla nss_12.5 oraz nss_11.4
+    strategy:
+      matrix:
+        nss_version: [nss_12.5, nss_11.4]
+      fail-fast: false
+
     env:
       GH_TOKEN: ${{ github.token }}
       MAIN_SHA: ${{ needs.check-updates.outputs.main_sha }}
       NSS_SHA: ${{ needs.check-updates.outputs.nss_sha }}
       DEVICE: ${{ needs.config.outputs.device }}
       DEVICE_DIR: ${{ needs.config.outputs.device_dir }}
-      RELEASE_PREFIX: ${{ needs.config.outputs.release_prefix }}
+      RELEASE_PREFIX: ${{ needs.config.outputs.release_prefix }}-${{ matrix.nss_version }}
       ARTIFACT_RETENTION_DAYS: ${{ needs.config.outputs.artifact_retention_days }}
       FEEDS_LINES: ${{ needs.config.outputs.feeds_lines }}
     outputs:
@@ -133,6 +140,25 @@ jobs:
         with:
           path: builder
 
+      # KROK B: Dynamiczne ustawianie wersji NSS Firmware w pliku .config
+      - name: Tweak config for selected NSS Firmware version
+        run: |
+          set -euo pipefail
+          CONFIG_FILE="builder/${{ env.DEVICE_DIR }}/config"
+          if [ -f "$CONFIG_FILE" ]; then
+            # Wyczyszczenie dotychczasowych flag wersji NSS, aby nie było konfliktów
+            sed -i '/CONFIG_NSS_FIRMWARE_VERSION_/d' "$CONFIG_FILE"
+            
+            # Wstrzyknięcie odpowiedniej flagi na podstawie wybranego wariantu macierzy
+            if [ "${{ matrix.nss_version }}" = "nss_11.4" ]; then
+              echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=y" >> "$CONFIG_FILE"
+              echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_11_4=y"
+            else
+              echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> "$CONFIG_FILE"
+              echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_12_5=y"
+            fi
+          fi
+
       - name: Prepare build environment
         env:
           OPENWRT_DIR: ${{ github.workspace }}/openwrt
@@ -144,24 +170,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 1. Wyciągnięcie prawdziwego numeru rewizji (np. r0+33880-0e751b1cb2) za pomocą skryptu OpenWrt
           if [ -f scripts/getver.sh ]; then
             OPENWRT_VERSION_RAW=$(bash scripts/getver.sh)
           else
             OPENWRT_VERSION_RAW=$(git rev-parse --short=10 HEAD)
           fi
 
-          # Złożenie pełnej nazwy wersji tak, jak robi to oficjalny system
           OPENWRT_VERSION="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW}"
-
-          # 2. Wygenerowanie aktualnej daty i godziny UTC
           CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
 
-          # 3. Dynamiczne sformatowanie i wyrównanie ramek w pliku banner
           if [ -f files/etc/banner ]; then
-            VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW}"
-
-            # POPRAWKA: Dodajemy spację przed '|' na początku i zmniejszamy szerokość do 72 znaków
+            VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW} (${{ matrix.nss_version }})"
             VERSION_PADDING=$(printf '%-72s' " | $VERSION_LINE")
             FINAL_VERSION_ROW="${VERSION_PADDING}|"
 
@@ -169,10 +188,8 @@ jobs:
             DATE_PADDING=$(printf '%-72s' " | $DATE_LINE")
             FINAL_DATE_ROW="${DATE_PADDING}|"
 
-            # Podmiana placeholderów w szablonie pliku banner
             sed -i "s#.*VERSION_PLACEHOLDER.*#$FINAL_VERSION_ROW#g" files/etc/banner
             sed -i "s#.*DATE_PLACEHOLDER.*#$FINAL_DATE_ROW#g" files/etc/banner
-
             echo "Successfully injected real git version and build time into banner."
           else
             echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
@@ -182,15 +199,13 @@ jobs:
             FINAL_DATE_ROW=""
           fi
 
-          # 4. Aktualizacja informacji dla panelu WWW (LuCI)
           TARGET_RELEASE_FILE="package/base-files/files/etc/openwrt_release"
-          DISTRIB_DESCRIPTION="${OPENWRT_VERSION} (NSS build by @Payti)"
+          DISTRIB_DESCRIPTION="${OPENWRT_VERSION} (${{ matrix.nss_version }} - NSS build by @Payti)"
           if [ -f "$TARGET_RELEASE_FILE" ]; then
             sed -i '/DISTRIB_DESCRIPTION=/d' "$TARGET_RELEASE_FILE"
             echo "DISTRIB_DESCRIPTION='${DISTRIB_DESCRIPTION}'" >> "$TARGET_RELEASE_FILE"
           fi
 
-          # 5. Wyświetlenie wartości zmiennych w logach kompilacji
           echo "=================================================="
           echo "OPENWRT_VERSION:         $OPENWRT_VERSION"
           echo "CURRENT_BUILD_TIME:      $CURRENT_BUILD_TIME"
@@ -234,7 +249,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ needs.config.outputs.device }}-images
+          name: ${{ needs.config.outputs.device }}-${{ matrix.nss_version }}-images
           path: openwrt/bin/targets/qualcommax/ipq807x
           if-no-files-found: error
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
@@ -245,29 +260,40 @@ jobs:
           set -euo pipefail
           date=$(date -u +%F)
           timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+          
           tag_name="${RELEASE_PREFIX}-${timestamp}-${GITHUB_RUN_ID}"
           echo "release_tag=$tag_name" >>"$GITHUB_OUTPUT"
 
           {
-            echo "## OpenWrt Build"
+            echo "## OpenWrt Build (${{ matrix.nss_version }})"
             echo "- **Date**: $date"
             echo "- **Device**: \`${DEVICE}\`"
+            echo "- **NSS FW Flavor**: \`${{ matrix.nss_version }}\`"
             echo "- **Upstream**: \`${MAIN_SHA}\`"
             echo "- **NSS**: \`${NSS_SHA}\`"
             echo "- **Trigger**: \`${GITHUB_EVENT_NAME}\`"
           } >release_notes.md
 
           mapfile -t assets < <(find openwrt/bin/targets/qualcommax/ipq807x/ -type f -not -path "*/packages/*")
+          
+          # Zmiana nazw plików binarnych (dodanie nss_12.5- lub nss_11.4- przed nazwą pliku)
+          for asset in "${assets[@]}"; do
+            dir=$(dirname "$asset")
+            base=$(basename "$asset")
+            mv "$asset" "$dir/${{ matrix.nss_version }}-$base"
+          done
+          mapfile -t renamed_assets < <(find openwrt/bin/targets/qualcommax/ipq807x/ -type f -not -path "*/packages/*")
+
           gh release create "$tag_name" \
             --repo "$GITHUB_REPOSITORY" \
-            --title "OpenWrt Build $date" \
+            --title "OpenWrt Build $date (${{ matrix.nss_version }})" \
             --notes-file release_notes.md \
-            "${assets[@]}"
+            "${renamed_assets[@]}"
 
           {
-            echo "## Release"
+            echo "## Release (${{ matrix.nss_version }})"
             echo "- tag: \`${tag_name}\`"
-            echo "- assets: ${#assets[@]}"
+            echo "- assets: ${#renamed_assets[@]}"
           } >>"$GITHUB_STEP_SUMMARY"
 
   prune:
