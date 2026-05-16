@@ -100,7 +100,7 @@ jobs:
     permissions:
       contents: write
       actions: read
-    
+
     # KROK A: Definicja Macierzy dla nss_12.5 oraz nss_11.4
     strategy:
       matrix:
@@ -148,7 +148,7 @@ jobs:
           if [ -f "$CONFIG_FILE" ]; then
             # Wyczyszczenie dotychczasowych flag wersji NSS, aby nie było konfliktów
             sed -i '/CONFIG_NSS_FIRMWARE_VERSION_/d' "$CONFIG_FILE"
-            
+
             # Wstrzyknięcie odpowiedniej flagi na podstawie wybranego wariantu macierzy
             if [ "${{ matrix.nss_version }}" = "nss_11.4" ]; then
               echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=y" >> "$CONFIG_FILE"
@@ -260,7 +260,7 @@ jobs:
           set -euo pipefail
           date=$(date -u +%F)
           timestamp=$(date -u +%Y%m%dT%H%M%SZ)
-          
+
           tag_name="${RELEASE_PREFIX}-${timestamp}-${GITHUB_RUN_ID}"
           echo "release_tag=$tag_name" >>"$GITHUB_OUTPUT"
 
@@ -275,7 +275,7 @@ jobs:
           } >release_notes.md
 
           mapfile -t assets < <(find openwrt/bin/targets/qualcommax/ipq807x/ -type f -not -path "*/packages/*")
-          
+
           # Zmiana nazw plików binarnych (dodanie nss_12.5- lub nss_11.4- przed nazwą pliku)
           for asset in "${assets[@]}"; do
             dir=$(dirname "$asset")
