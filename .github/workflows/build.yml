@@ -139,6 +139,40 @@ jobs:
           BUILDER_REPO: ${{ github.workspace }}/builder
         run: bash builder/scripts/prepare-build.sh
 
+      - name: Dynamically update custom OpenWrt banner info
+        working-directory: openwrt
+        run: |
+          set -euo pipefail
+
+          # 1. Wyciągnięcie oficjalnego i unikalnego ciągu wersji (np. OpenWrt SNAPSHOT, r0+33880-0e751b1cb2)
+          OPENWRT_VERSION=$(grep "DISTRIB_DESCRIPTION=" package/base-files/files/etc/openwrt_release | cut -d"'" -f2)
+          
+          # 2. Wygenerowanie aktualnej daty i godziny uruchomienia tego buildu w formacie UTC
+          CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+          # 3. Dynamiczne formatowanie tekstu w pliku banner przy użyciu sed
+          if [ -f files/etc/banner ]; then
+            # Formatowanie tekstu do równej długości linii z dopełnieniem spacjami (dla zachowania ramek '|')
+            VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION#*, }"
+            VERSION_PADDING=$(printf '%-74s' "| $VERSION_LINE")
+            FINAL_VERSION_ROW="${VERSION_PADDING% }|"
+
+            DATE_LINE="Build time: $CURRENT_BUILD_TIME"
+            DATE_PADDING=$(printf '%-74s' "| $DATE_LINE")
+            FINAL_DATE_ROW="${DATE_PADDING% }|"
+
+            # Podmiana placeholderów w pliku banner
+            sed -i "s|.*VERSION_PLACEHOLDER.*|$FINAL_VERSION_ROW|g" files/etc/banner
+            sed -i "s|.*DATE_PLACEHOLDER.*|$FINAL_DATE_ROW|g" files/etc/banner
+            
+            echo "Successfully injected version ($OPENWRT_VERSION) and build time ($CURRENT_BUILD_TIME) into banner."
+          else
+            echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
+          fi
+
+          # 4. Automatyczna modyfikacja informacji dla panelu WWW (LuCI)
+          sed -i "s|DISTRIB_DESCRIPTION='.*'|DISTRIB_DESCRIPTION='$OPENWRT_VERSION (NSS build by @Payti)'|g" package/base-files/files/etc/openwrt_release
+
       - name: Set reproducible-build env
         working-directory: openwrt
         run: |
