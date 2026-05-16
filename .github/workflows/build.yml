@@ -159,16 +159,14 @@ jobs:
 
           # 3. Dynamiczne sformatowanie i wyrównanie ramek w pliku banner
           if [ -f files/etc/banner ]; then
-            # POPRAWKA: Używamy nowej zmiennej OPENWRT_VERSION_RAW zamiast nieistniejących GIT_REVISION/GIT_HASH
             VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW}"
 
-            # Dokładne wyrównanie do szerokości 75 znaków (od znaku '|' do drugiego '|' włącznie)
-            # %-73s rezerwuje 73 znaki na tekst i spacje dopełniające
-            VERSION_PADDING=$(printf '%-73s' "| $VERSION_LINE")
+            # POPRAWKA: Dodajemy spację przed '|' na początku i zmniejszamy szerokość do 72 znaków
+            VERSION_PADDING=$(printf '%-72s' " | $VERSION_LINE")
             FINAL_VERSION_ROW="${VERSION_PADDING}|"
 
             DATE_LINE="Build time: $CURRENT_BUILD_TIME"
-            DATE_PADDING=$(printf '%-73s' "| $DATE_LINE")
+            DATE_PADDING=$(printf '%-72s' " | $DATE_LINE")
             FINAL_DATE_ROW="${DATE_PADDING}|"
 
             # Podmiana placeholderów w szablonie pliku banner
