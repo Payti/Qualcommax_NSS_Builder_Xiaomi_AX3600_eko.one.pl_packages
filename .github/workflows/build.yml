@@ -147,7 +147,7 @@ jobs:
           # 1. Bezpieczne wyciągnięcie wersji z pliku openwrt_release
           RAW_VERSION=$(grep "DISTRIB_DESCRIPTION=" package/base-files/files/etc/openwrt_release || echo "DISTRIB_DESCRIPTION='OpenWrt SNAPSHOT'")
           OPENWRT_VERSION=$(echo "$RAW_VERSION" | sed "s/DISTRIB_DESCRIPTION=//g" | tr -d "'\"")
-          
+
           # 2. Wygenerowanie aktualnej daty i godziny UTC
           CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
 
@@ -156,7 +156,7 @@ jobs:
             # Wyciągamy samą końcówkę wersji (np. SNAPSHOT, rX+XXXXX)
             CLEAN_VER="${OPENWRT_VERSION#OpenWrt }"
             VERSION_LINE="OpenWrt ${CLEAN_VER}"
-            
+
             # Budujemy pełne linie z oryginalnymi kreskami | na początku i końcu
             VERSION_PADDING=$(printf '%-74s' "| $VERSION_LINE")
             FINAL_VERSION_ROW="${VERSION_PADDING% }|"
@@ -168,7 +168,7 @@ jobs:
             # Używamy separatora '#' w sed, dzięki czemu pionowe kreski | bezpiecznie trafią do pliku
             sed -i "s#.*VERSION_PLACEHOLDER.*#$FINAL_VERSION_ROW#g" files/etc/banner
             sed -i "s#.*DATE_PLACEHOLDER.*#$FINAL_DATE_ROW#g" files/etc/banner
-            
+
             echo "Successfully injected version and build time into banner with '|' frames."
           else
             echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
