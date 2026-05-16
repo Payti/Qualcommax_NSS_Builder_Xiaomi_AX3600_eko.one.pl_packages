@@ -144,56 +144,57 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 1. Bezpieczne wyciągnięcie wersji z pliku openwrt_release
-          RAW_VERSION=$(grep "DISTRIB_DESCRIPTION=" package/base-files/files/etc/openwrt_release || echo "DISTRIB_DESCRIPTION='OpenWrt SNAPSHOT'")
-          OPENWRT_VERSION=$(echo "$RAW_VERSION" | sed "s/DISTRIB_DESCRIPTION=//g" | tr -d "'\"")
+          # 1. Wyciągnięcie prawdziwego numeru rewizji i skróconego hasha prosto z repozytorium Git OpenWrt
+          GIT_REVISION=$(git describe --match="v[0-9]*" --dirty --always 2>/dev/null || echo "r0")
+          GIT_HASH=$(git rev-parse --short=10 HEAD)
+
+          # Złożenie pełnej nazwy wersji tak, jak robi to OpenWrt (np. OpenWrt SNAPSHOT, r0-0e751b1cb2)
+          OPENWRT_VERSION="OpenWrt SNAPSHOT, ${GIT_REVISION}-${GIT_HASH}"
 
           # 2. Wygenerowanie aktualnej daty i godziny UTC
           CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
 
-          # 3. Dynamiczne formatowanie tekstu w pliku banner
+          # 3. Dynamiczne sformatowanie i wyrównanie ramek w pliku banner
           if [ -f files/etc/banner ]; then
-            # Wyciągamy samą końcówkę wersji (np. SNAPSHOT, rX+XXXXX)
-            CLEAN_VER="${OPENWRT_VERSION#OpenWrt }"
-            VERSION_LINE="OpenWrt ${CLEAN_VER}"
-
-            # Budujemy pełne linie z oryginalnymi kreskami | na początku i końcu
-            VERSION_PADDING=$(printf '%-74s' "| $VERSION_LINE")
-            FINAL_VERSION_ROW="${VERSION_PADDING% }|"
+            VERSION_LINE="OpenWrt SNAPSHOT, ${GIT_REVISION}-${GIT_HASH}"
+            # Dokładne wyrównanie do szerokości 75 znaków (od znaku '|' do drugiego '|' włącznie)
+            # %-73s rezerwuje 73 znaki na tekst i spacje dopełniające
+            VERSION_PADDING=$(printf '%-73s' "| $VERSION_LINE")
+            FINAL_VERSION_ROW="${VERSION_PADDING}|"
 
             DATE_LINE="Build time: $CURRENT_BUILD_TIME"
-            DATE_PADDING=$(printf '%-74s' "| $DATE_LINE")
-            FINAL_DATE_ROW="${DATE_PADDING% }|"
+            DATE_PADDING=$(printf '%-73s' "| $DATE_LINE")
+            FINAL_DATE_ROW="${DATE_PADDING}|"
 
-            # Używamy separatora '#' w sed, dzięki czemu pionowe kreski | bezpiecznie trafią do pliku
+            # Podmiana placeholderów w szablonie pliku banner
             sed -i "s#.*VERSION_PLACEHOLDER.*#$FINAL_VERSION_ROW#g" files/etc/banner
             sed -i "s#.*DATE_PLACEHOLDER.*#$FINAL_DATE_ROW#g" files/etc/banner
 
-            echo "Successfully injected version and build time into banner with '|' frames."
+            echo "Successfully injected real git version and build time into banner."
           else
             echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
+            VERSION_LINE="OpenWrt SNAPSHOT"
+            FINAL_VERSION_ROW=""
+            DATE_LINE=""
+            FINAL_DATE_ROW=""
           fi
 
           # 4. Aktualizacja informacji dla panelu WWW (LuCI)
           TARGET_RELEASE_FILE="package/base-files/files/etc/openwrt_release"
+          DISTRIB_DESCRIPTION="${OPENWRT_VERSION} (NSS build by @Payti)"
           if [ -f "$TARGET_RELEASE_FILE" ]; then
             sed -i '/DISTRIB_DESCRIPTION=/d' "$TARGET_RELEASE_FILE"
-            echo "DISTRIB_DESCRIPTION='${OPENWRT_VERSION} (NSS build by @Payti)'" >> "$TARGET_RELEASE_FILE"
+            echo "DISTRIB_DESCRIPTION='${DISTRIB_DESCRIPTION}'" >> "$TARGET_RELEASE_FILE"
           fi
 
           # 5. Wyświetlenie wartości zmiennych w logach kompilacji
           echo "=================================================="
-          echo "RAW_VERSION:             $RAW_VERSION"
-          echo "DISTRIB_DESCRIPTION:     $DISTRIB_DESCRIPTION"
           echo "OPENWRT_VERSION:         $OPENWRT_VERSION"
           echo "CURRENT_BUILD_TIME:      $CURRENT_BUILD_TIME"
-          echo "CLEAN_VER:               $CLEAN_VER"
-          echo "VERSION_LINE:            $VERSION_LINE"
-          echo "VERSION_PADDING:         $VERSION_PADDING"
-          echo "DATE_LINE:               $DATE_LINE"
-          echo "DATE_PADDING:            $DATE_PADDING"
-          echo "FINAL_VERSION_ROW:       $FINAL_VERSION_ROW"
-          echo "FINAL_DATE_ROW:          $FINAL_DATE_ROW"
+          echo "VERSION_LINE:            ${VERSION_LINE:-}"
+          echo "DATE_LINE:               ${DATE_LINE:-}"
+          echo "FINAL_VERSION_ROW:       ${FINAL_VERSION_ROW:-}"
+          echo "FINAL_DATE_ROW:          ${FINAL_DATE_ROW:-}"
           echo "=================================================="
 
       - name: Set reproducible-build env
