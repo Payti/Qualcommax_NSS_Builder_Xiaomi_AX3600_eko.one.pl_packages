@@ -188,14 +188,14 @@ jobs:
             VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW} (${{ matrix.nss_version }})"
             DATE_LINE="Build time: $CURRENT_BUILD_TIME"
 
-            # MATEMATYKA RAMKI (Łącznie 77 znaków - identycznie jak linia z podpisem Payti):
-            # " | " (3 znaki) + %-73s (73 znaki bufora na tekst i dopełniające spacje) + "|" (1 znak) = 77 znaków.
-            # Zastosowanie %-73s gwarantuje, że różnice w długości nazw nss_11.4 i nss_12.5 zostaną idealnie zniwelowane spacjami.
+            # KOREKTA SZEROKOŚCI RAMKI:
+            # " | " (3 znaki) + %-74s (74 znaki na tekst i dopełniające spacje) + "|" (1 znak) = Łącznie 78 znaków.
+            # Zwiększenie bufora do %-74s dodaje brakującą spację przed zamykającą kreską |.
 
-            VERSION_PADDING=$(printf '%-73s' "$VERSION_LINE")
+            VERSION_PADDING=$(printf '%-74s' "$VERSION_LINE")
             FINAL_VERSION_ROW=" | ${VERSION_PADDING}|"
 
-            DATE_PADDING=$(printf '%-73s' "$DATE_LINE")
+            DATE_PADDING=$(printf '%-74s' "$DATE_LINE")
             FINAL_DATE_ROW=" | ${DATE_PADDING}|"
 
             # Podmiana placeholderów w szablonie pliku banner
