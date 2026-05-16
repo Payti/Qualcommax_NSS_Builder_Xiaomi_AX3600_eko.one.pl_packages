@@ -170,26 +170,38 @@ jobs:
         run: |
           set -euo pipefail
 
+          # 1. Wyciągnięcie prawdziwego numeru rewizji (np. r0+33880-0e751b1cb2) za pomocą skryptu OpenWrt
           if [ -f scripts/getver.sh ]; then
             OPENWRT_VERSION_RAW=$(bash scripts/getver.sh)
           else
             OPENWRT_VERSION_RAW=$(git rev-parse --short=10 HEAD)
           fi
 
+          # Złożenie pełnej nazwy wersji tak, jak robi to oficjalny system
           OPENWRT_VERSION="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW}"
+
+          # 2. Wygenerowanie aktualnej daty i godziny UTC
           CURRENT_BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
 
+          # 3. Dynamiczne sformatowanie i wyrównanie ramek w pliku banner
           if [ -f files/etc/banner ]; then
             VERSION_LINE="OpenWrt SNAPSHOT, ${OPENWRT_VERSION_RAW} (${{ matrix.nss_version }})"
-            VERSION_PADDING=$(printf '%-72s' " | $VERSION_LINE")
-            FINAL_VERSION_ROW="${VERSION_PADDING}|"
-
             DATE_LINE="Build time: $CURRENT_BUILD_TIME"
-            DATE_PADDING=$(printf '%-72s' " | $DATE_LINE")
-            FINAL_DATE_ROW="${DATE_PADDING}|"
 
+            # MATEMATYKA RAMKI (Łącznie 77 znaków - identycznie jak linia z podpisem Payti):
+            # " | " (3 znaki) + %-73s (73 znaki bufora na tekst i dopełniające spacje) + "|" (1 znak) = 77 znaków.
+            # Zastosowanie %-73s gwarantuje, że różnice w długości nazw nss_11.4 i nss_12.5 zostaną idealnie zniwelowane spacjami.
+            
+            VERSION_PADDING=$(printf '%-73s' "$VERSION_LINE")
+            FINAL_VERSION_ROW=" | ${VERSION_PADDING}|"
+
+            DATE_PADDING=$(printf '%-73s' "$DATE_LINE")
+            FINAL_DATE_ROW=" | ${DATE_PADDING}|"
+
+            # Podmiana placeholderów w szablonie pliku banner
             sed -i "s#.*VERSION_PLACEHOLDER.*#$FINAL_VERSION_ROW#g" files/etc/banner
             sed -i "s#.*DATE_PLACEHOLDER.*#$FINAL_DATE_ROW#g" files/etc/banner
+
             echo "Successfully injected real git version and build time into banner."
           else
             echo "::warning::Custom banner file was not deployed by prepare-build.sh to openwrt/files/etc/banner"
@@ -199,6 +211,7 @@ jobs:
             FINAL_DATE_ROW=""
           fi
 
+          # 4. Aktualizacja informacji dla panelu WWW (LuCI)
           TARGET_RELEASE_FILE="package/base-files/files/etc/openwrt_release"
           DISTRIB_DESCRIPTION="${OPENWRT_VERSION} (${{ matrix.nss_version }} - NSS build by @Payti)"
           if [ -f "$TARGET_RELEASE_FILE" ]; then
@@ -206,6 +219,7 @@ jobs:
             echo "DISTRIB_DESCRIPTION='${DISTRIB_DESCRIPTION}'" >> "$TARGET_RELEASE_FILE"
           fi
 
+          # 5. Wyświetlenie wartości zmiennych w logach kompilacji
           echo "=================================================="
           echo "OPENWRT_VERSION:         $OPENWRT_VERSION"
           echo "CURRENT_BUILD_TIME:      $CURRENT_BUILD_TIME"
