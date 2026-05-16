@@ -38,7 +38,7 @@ set bcp38.cfg018e45.enabled='1'
 set bcp38.cfg018e45.interface='wan'
 
 # uHTTPd settings
-set uhttpd.main.redirect_https='1'
+set uhttpd.main.redirect_https='0'
 
 # OpenSSL OQS provider
 set openssl.oqsprovider=provider
