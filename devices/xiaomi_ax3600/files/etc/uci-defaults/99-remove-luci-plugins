@@ -9,8 +9,9 @@ if [ -f "$FILE" ]; then
     # Usuwamy linię z kluczem, kolejne 10 linii bloku oraz 1 pustą linię pod spodem (+11 linii łącznie)
     sed -i '/"admin\/system\/plugins": {/,+11d' "$FILE"
 
-    # Czyszczenie pamięci podręcznej LuCI
+    # Czyszczenie pamięci podręcznej LuCI i ustawienie +x dla 20_cpu_temperature
     rm -rf /tmp/luci-indexcache /tmp/luci-modulecache
+    chmod +x /etc/sysinfo.d/20_cpu_temperature
 fi
 
 exit 0
