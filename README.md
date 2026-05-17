@@ -73,6 +73,33 @@ Each job has minimal `permissions`. The cron schedule is the only knob outside `
 
 ---
 
+# NSS Support Matrix
+
+| Feature   | IPQ807x | IPQ60xx | Feature         | IPQ807x | IPQ60xx |
+| --------- | :-----: | :-----: | --------------- | :-----: | :-----: |
+| TUNIPIP6  |   ✅    |   ✅    | RMNET           |  🟨<sup><a href="#fn1">1</a></sup>  |  ⛔<sup><a href="#fn2">2</a></sup>  |
+| PPPOE     |   ✅    |   ✅    | MIRROR          |   ✅    |   ✅    |
+| L2TPV2    |   ✅    |   ✅    | WIFI (AP/STA)   |   ✅    |   ✅    |
+| BRIDGE    |   ✅    |   ✅    | WIFI (WDS)      |  🟨<sup><a href="#fn1">1</a></sup>  |  🟨<sup><a href="#fn1">1</a></sup>  |
+| VLAN      |   ✅    |   ✅    | WIFI (MESH)     |  🟨<sup><a href="#fn1">1</a></sup>  |  🟨<sup><a href="#fn1">1</a></sup>  |
+| MAP_T     |   ✅    |   ✅    | WIFI (AP VLAN)  |  ⚠️<sup><a href="#fn4">4</a></sup>  |  ⚠️<sup><a href="#fn4">4</a></sup>  |
+| TUN6RD    |   ✅    |   ✅    | IPSEC           |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| GRE       |   ✅    |   ✅    | PVXLAN          |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| PPTP      |   ✅    |   ✅    | CLMAP           |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| IGS       |   ✅    |   ✅    | TLS             |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| VXLAN     |   ✅    |   ✅    | CAPWAP          |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| MATCH     |   ✅    |   ✅    | DTLS            |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+
+<a id="fn1"></a><sup>1</sup> 🟨 Requires **NSS FW 11.4**  
+<a id="fn2"></a><sup>2</sup> ⛔ Not available on platform  
+<a id="fn3"></a><sup>3</sup> ❌ Not available in NSS FW (11.4–12.5)  
+<a id="fn4"></a><sup>4</sup> ⚠️ Broken in ath11k driver  
+
+> **Note on IPQ50xx:**  
+> Although the IPQ50xx family has NSS offloading capabilities, its architecture is substantially different from IPQ807x/IPQ60xx and requires additional patching. Most of my NSS patches for IPQ50xx have been blind guesswork (I do not own any), and thus far unsuccessful. If anyone with one of these devices gets NSS working, feel free to open a PR.
+
+---
+
 ## Reference build: Xiaomi AX3600 (IPQ8071A)
 
 The default `builder.yml` builds a hardened, NSS-accelerated firmware for the **Xiaomi AX3600**.
