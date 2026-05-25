@@ -45,6 +45,7 @@ For a different device, see [`docs/ADD_A_DEVICE.md`](docs/ADD_A_DEVICE.md).
 │   ├── prepare-build.sh
 │   ├── prune-releases.sh
 │   └── tests/
+├── screenshots/                     # screenshots of working this OpenWrt build
 ├── docs/
 │   ├── ADD_A_DEVICE.md
 │   ├── CUSTOMIZE.md
