@@ -141,7 +141,11 @@ Enabled NSS modules: `kmod-qca-nss-drv`, `kmod-qca-nss-drv-bridge-mgr`, `kmod-qc
 Latest release: [Releases page](https://github.com/Payti/Qualcommax_NSS_Builder_Xiaomi_AX3600_eko.one.pl_packages/releases/latest). Grab the `*-sysupgrade.bin` and:
 
 ```sh
-sysupgrade -n /tmp/openwrt-qualcommax-ipq807x-xiaomi_ax3600-squashfs-sysupgrade.bin
+sysupgrade -n /tmp/nss_11.4-openwrt-qualcommax-ipq807x-xiaomi_ax3600-squashfs-sysupgrade.bin
+```
+or
+```sh
+sysupgrade -n /tmp/nss_12.5-openwrt-qualcommax-ipq807x-xiaomi_ax3600-squashfs-sysupgrade.bin
 ```
 
 Or via LuCI: **System -> Backup / Flash Firmware**, upload, uncheck "Keep settings" for first-time flash. Coming from stock Xiaomi? Install OpenWrt first via the [official guide](https://openwrt.org/toh/xiaomi/ax3600).
