@@ -27,7 +27,7 @@ permissions:
 jobs:
   config:
     name: Load builder.yml
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
       upstream_repo: ${{ steps.cfg.outputs.upstream_repo }}
@@ -48,7 +48,7 @@ jobs:
   check-updates:
     name: Check upstream
     needs: config
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -95,7 +95,7 @@ jobs:
     name: Build firmware (${{ matrix.nss_version }})
     needs: [config, check-updates]
     if: needs.check-updates.outputs.build_required == 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
       contents: write
@@ -327,7 +327,7 @@ jobs:
   prune:
     name: Prune old releases
     needs: [config, build]
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write
