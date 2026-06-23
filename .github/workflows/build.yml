@@ -244,9 +244,6 @@ jobs:
                 echo "CONFIG_PACKAGE_ds-lite=y"
                 echo "CONFIG_PACKAGE_ethtool=y"
                 echo "CONFIG_PACKAGE_gre=y"
-                echo "# CONFIG_PACKAGE_kmod-dahdi-linux is not set"
-                echo "# CONFIG_PACKAGE_dahdi-linux is not set"
-                echo "# CONFIG_PACKAGE_dahdi-tools is not set"
               } >> "$CONFIG_FILE"
               echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_11_4=y and add NSS modules + packages"
             else
@@ -346,7 +343,15 @@ jobs:
             echo "Download attempt $attempt failed; retrying..."
             sleep 5
           done
-
+          
+      - name: Update and install feeds + disable packages
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          # Ręczne usunięcie dahdi, żeby CONFIG_ALL_KMODS go nie widział:
+          rm -rf package/feeds/telephony/dahdi-linux
+          echo "### Usunięcie dahdi-linux, żeby CONFIG_ALL_KMODS go nie widział! ###"
+          
       - name: Build
         working-directory: openwrt
         run: |
