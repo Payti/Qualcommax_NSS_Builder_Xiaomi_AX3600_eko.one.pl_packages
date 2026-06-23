@@ -350,8 +350,10 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           # Ręczne usunięcie dahdi, żeby CONFIG_ALL_KMODS go nie widział:
+          echo "### Usuwanie dahdi-linux oraz rtl8812au-ct aby CONFIG_ALL_KMODS ich nie widział! ###"
           rm -rf package/feeds/telephony/dahdi-linux
-          echo "### Usunięcie dahdi-linux, żeby CONFIG_ALL_KMODS go nie widział! ###"
+          rm -rf package/kernel/rtl8812au-ct
+          echo "### Done! ###"
 
       - name: Build
         working-directory: openwrt
