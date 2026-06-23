@@ -343,7 +343,7 @@ jobs:
             echo "Download attempt $attempt failed; retrying..."
             sleep 5
           done
-          
+
       - name: Update and install feeds + disable packages
         run: |
           ./scripts/feeds update -a
@@ -351,7 +351,7 @@ jobs:
           # Ręczne usunięcie dahdi, żeby CONFIG_ALL_KMODS go nie widział:
           rm -rf package/feeds/telephony/dahdi-linux
           echo "### Usunięcie dahdi-linux, żeby CONFIG_ALL_KMODS go nie widział! ###"
-          
+
       - name: Build
         working-directory: openwrt
         run: |
