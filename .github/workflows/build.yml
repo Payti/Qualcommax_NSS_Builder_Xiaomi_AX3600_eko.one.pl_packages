@@ -344,7 +344,7 @@ jobs:
             sleep 5
           done
 
-      - name: Update and install feeds + disable packages
+        - name: Update and install feeds + disable packages
         working-directory: openwrt
         run: |
           ./scripts/feeds update -a
@@ -354,13 +354,13 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-          echo "### Naprawa xdp-tools (konflikt z linkerem mold) ###"
-          # Wchodzimy do katalogu pakietu i wymuszamy klasyczny linker bfd w jego Makefile
-          if [ -d "package/network/utils/xdp-tools" ]; then
-            sed -i 's/TARGET_LDFLAGS+=/TARGET_LDFLAGS+=-fuse-ld=bfd /g' package/network/utils/xdp-tools/Makefile
-            echo "-> Pomyślnie zmodyfikowano Makefile dla xdp-tools."
+          echo "### Naprawa xdp-tools (Filtrowanie LDFLAGS bezpośrednio w definicji pakietu) ###"
+          if [ -f package/network/utils/xdp-tools/Makefile ]; then
+            # Wstrzykujemy czyszczenie LDFLAGS bezpośrednio przed wywołaniem głównego make w OpenWrt
+            sed -i '/define Build\/Compile/a \	LDFLAGS="$(subst -fuse-ld=mold,,$(TARGET_LDFLAGS))"' package/network/utils/xdp-tools/Makefile
+            echo "-> Sukces! Zabezpieczono xdp-tools przed linkerem mold."
           else
-            echo "-> UWAGA: Nie znaleziono katalogu xdp-tools!"
+            echo "-> BŁĄD: Nie znaleziono Makefile dla xdp-tools!"
           fi
 
       - name: Build
