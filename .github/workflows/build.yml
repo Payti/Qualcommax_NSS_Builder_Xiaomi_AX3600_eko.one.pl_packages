@@ -343,8 +343,8 @@ jobs:
             echo "Download attempt $attempt failed; retrying..."
             sleep 5
           done
-
-        - name: Update and install feeds + disable packages
+        
+      - name: Update and install feeds + disable packages
         working-directory: openwrt
         run: |
           ./scripts/feeds update -a
@@ -354,10 +354,10 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-          echo "### Naprawa xdp-tools (Filtrowanie LDFLAGS bezpośrednio w definicji pakietu) ###"
+          echo "### Naprawa xdp-tools (Filtrowanie LDFLAGS) ###"
           if [ -f package/network/utils/xdp-tools/Makefile ]; then
-            # Wstrzykujemy czyszczenie LDFLAGS bezpośrednio przed wywołaniem głównego make w OpenWrt
-            sed -i '/define Build\/Compile/a \	LDFLAGS="$(subst -fuse-ld=mold,,$(TARGET_LDFLAGS))"' package/network/utils/xdp-tools/Makefile
+            # Używamy czystych spacji zamiast tabulatora, aby uniknąć błędów YAML
+            sed -i '/define Build\/Compile/a \  LDFLAGS="$(subst -fuse-ld=mold,,$(TARGET_LDFLAGS))"' package/network/utils/xdp-tools/Makefile
             echo "-> Sukces! Zabezpieczono xdp-tools przed linkerem mold."
           else
             echo "-> BŁĄD: Nie znaleziono Makefile dla xdp-tools!"
