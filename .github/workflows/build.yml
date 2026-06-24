@@ -349,17 +349,19 @@ jobs:
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          # Ręczne usunięcie dahdi, żeby CONFIG_ALL_KMODS go nie widział:
-          echo "### Usuwanie pakietów dahdi-linux oraz rtl8812au-ct aby CONFIG_ALL_KMODS ich nie widział! ###"
+          
+          echo "### Usuwanie pakietów dahdi-linux i rtl8812au-ct ###"
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
-          echo "### Usunięte! ###"
-          # Wymuszenie klasycznego linkera dla xdp-tools, aby mold nie wywalał błędu -b binary:
-          echo "### Poprawka dla xdp-tools - podmiana linkera na bfd! ###"
-          if [ -f package/network/utils/xdp-tools/Makefile ]; then
+          
+          echo "### Naprawa xdp-tools (konflikt z linkerem mold) ###"
+          # Wchodzimy do katalogu pakietu i wymuszamy klasyczny linker bfd w jego Makefile
+          if [ -d "package/network/utils/xdp-tools" ]; then
             sed -i 's/TARGET_LDFLAGS+=/TARGET_LDFLAGS+=-fuse-ld=bfd /g' package/network/utils/xdp-tools/Makefile
+            echo "-> Pomyślnie zmodyfikowano Makefile dla xdp-tools."
+          else
+            echo "-> UWAGA: Nie znaleziono katalogu xdp-tools!"
           fi
-          echo "### Poprawka dla xdp-tools zaaplikowana! ###"
 
       - name: Build
         working-directory: openwrt
