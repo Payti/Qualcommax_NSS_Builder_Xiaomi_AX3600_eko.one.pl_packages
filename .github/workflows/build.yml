@@ -343,7 +343,7 @@ jobs:
             echo "Download attempt $attempt failed; retrying..."
             sleep 5
           done
-        
+
       - name: Update and install feeds + disable packages
         working-directory: openwrt
         run: |
@@ -356,7 +356,7 @@ jobs:
 
           echo "### Naprawa xdp-tools (Filtrowanie LDFLAGS) ###"
           if [ -f package/network/utils/xdp-tools/Makefile ]; then
-            # Używamy czystych spacji zamiast tabulatora, aby uniknąć błędów YAML
+            # shellcheck disable=SC2016
             sed -i '/define Build\/Compile/a \  LDFLAGS="$(subst -fuse-ld=mold,,$(TARGET_LDFLAGS))"' package/network/utils/xdp-tools/Makefile
             echo "-> Sukces! Zabezpieczono xdp-tools przed linkerem mold."
           else
