@@ -363,7 +363,7 @@ jobs:
           echo "### Modyfikacja libxdp Makefile w build_dir ###"
           # Szukamy właściwego pliku za pomocą find i zapisu do zmiennej basha bez pipe do set
           TARGET_MAKE=$(find build_dir/ -type f -path "*/xdp-tools*/lib/libxdp/Makefile" 2>/dev/null | head -n 1)
-          
+
           if [ -n "$TARGET_MAKE" ] && [ -f "$TARGET_MAKE" ]; then
             # Zmieniamy definicję linkowania bezpośrednio podstawiając tekst (bez kłopotliwych zmiennych)
             sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$TARGET_MAKE"
