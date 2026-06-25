@@ -354,26 +354,26 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-      - name: Fix xdp-tools - gc-sections error
+      - name: Fix xdp-tools gc-sections error
         working-directory: openwrt
         run: |
           echo "### Przygotowanie źródeł xdp-tools ###"
-          # Wymuszamy na OpenWrt rozpakowanie i przygotowanie katalogu build_dir dla xdp-tools
           make package/network/utils/xdp-tools/prepare V=s || true
 
           echo "### Modyfikacja libxdp Makefile w build_dir ###"
-          TARGET_MAKE=$(find build_dir/ -name "Makefile" | grep "xdp-tools" | grep "libxdp/Makefile" || true)
-
+          # Szukamy właściwego pliku za pomocą find i zapisu do zmiennej basha bez pipe do set
+          TARGET_MAKE=$(find build_dir/ -type f -path "*/xdp-tools*/lib/libxdp/Makefile" 2>/dev/null | head -n 1)
+          
           if [ -n "$TARGET_MAKE" ] && [ -f "$TARGET_MAKE" ]; then
-            # Usuwamy flagę --gc-sections z wywołania konkretnego polecenia w Makefile
-            sed -i 's/\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary/\$(LD) -r -nostdlib -Wl,-z,noexecstack/g' "$TARGET_MAKE"
-            echo "-> Plik $TARGET_MAKE został pomyślnie zmodyfikowany."
+            # Zmieniamy definicję linkowania bezpośrednio podstawiając tekst (bez kłopotliwych zmiennych)
+            sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$TARGET_MAKE"
+            echo "-> Plik $TARGET_MAKE został pomyślnie skorygowany."
           else
-            echo "-> OSTRZEŻENIE: Nie znaleziono jeszcze pliku Makefile w build_dir. Zostanie zmodyfikowany w locie."
-            # Zabezpieczenie na wypadek, gdyby OpenWrt rozpakowywał pakiet później - modyfikujemy u źródła w feeds
-            FEED_MAKE=$(find package/ -name "Makefile" | grep "xdp-tools" | set +e | xargs grep -l "xdp-dispatcher.embed.o" 2>/dev/null || true)
+            echo "-> OSTRZEŻENIE: Nie znaleziono pliku w build_dir. Szukam w katalogu feedów..."
+            FEED_MAKE=$(find package/ -type f -path "*/xdp-tools*/lib/libxdp/Makefile" 2>/dev/null | head -n 1)
             if [ -n "$FEED_MAKE" ] && [ -f "$FEED_MAKE" ]; then
               sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$FEED_MAKE"
+              echo "-> Skorygowano plik u źródła: $FEED_MAKE"
             fi
           fi
 
@@ -398,11 +398,10 @@ jobs:
         working-directory: openwrt
         run: |
           cd bin/targets/qualcommax/ipq807x/
-          # Usuwamy stare pliki sum, jeśli istnieją, żeby nie zapętlić skryptu
           rm -f md5sums sha256sums
-          # Generujemy sumy dla wszystkich plików w katalogu
-          md5sum * > md5sums
-          sha256sum * > sha256sums
+          # Użycie ./* zamiast * ucisza ostrzeżenie shellcheck SC2035
+          md5sum ./* > md5sums
+          sha256sum ./* > sha256sums
 
       - name: Pack APK Packages
         working-directory: openwrt
