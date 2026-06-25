@@ -354,16 +354,21 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-          echo "### Kompleksowe czyszczenie flag dla xdp-tools ###"
-          if [ -d "package/network/utils/xdp-tools" ]; then
-            # Usuwamy mold oraz gc-sections z TARGET_LDFLAGS dla tego pakietu
+          echo "### Korekta Makefile xdp-tools przed kompilacją ###"
+          if [ -f "package/network/utils/xdp-tools/Makefile" ]; then
+            # 1. Wymuszamy linker bfd na poziomie zmiennych pakietu
+            sed -i '/TARGET_LDFLAGS +=/s/$/ -fuse-ld=bfd/' package/network/utils/xdp-tools/Makefile
+
+            # 2. Bezpośrednio w linii CONFIGURE_ARGS odfiltrowujemy mold oraz gc-sections
             # shellcheck disable=SC2016
-            sed -i 's/TARGET_LDFLAGS +=/TARGET_LDFLAGS += -fuse-ld=bfd /g' package/network/utils/xdp-tools/Makefile
-            # shellcheck disable=SC2016
-            sed -i 's/CONFIGURE_ARGS +=/CONFIGURE_ARGS += LDFLAGS="$(subst -fuse-ld=mold,,$(subst -Wl\,--gc-sections,,$(TARGET_LDFLAGS))) -fuse-ld=bfd" /g' package/network/utils/xdp-tools/Makefile
-            echo "-> Flagi skorygowane pomyślnie."
+            sed -i '/CONFIGURE_ARGS +=/i TARGET_LDFLAGS_CLEANED=$(subst -fuse-ld=mold,,$(subst -Wl\,--gc-sections,,$(TARGET_LDFLAGS))) -fuse-ld=bfd' package/network/utils/xdp-tools/Makefile
+
+            # 3. Nadpisujemy przekazywanie LDFLAGS w CONFIGURE_ARGS nową, czystą zmienną
+            sed -i 's|CONFIGURE_ARGS +=|CONFIGURE_ARGS += LDFLAGS="$(TARGET_LDFLAGS_CLEANED)"|' package/network/utils/xdp-tools/Makefile
+
+            echo "-> Makefile dla xdp-tools pomyślnie zrekonstruowany."
           else
-            echo "-> BŁĄD: Nie znaleziono katalogu xdp-tools!"
+            echo "-> BŁĄD: Nie znaleziono Makefile dla xdp-tools!"
           fi
 
       - name: Build
@@ -382,6 +387,23 @@ jobs:
           path: openwrt/bin/targets/qualcommax/ipq807x
           if-no-files-found: error
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      - name: Generate checksums
+        working-directory: openwrt
+        run: |
+          md5sum bin/targets/ipq807x/generic/*firmware* > bin/targets/ipq807x/generic/md5sums
+          sha256sum bin/targets/ipq807x/generic/*firmware* > bin/targets/ipq807x/generic/sha256sums
+
+      - name: Pack APK Packages
+        working-directory: openwrt
+        run: |
+          echo "### Pakowanie skompilowanych pakietów .apk ###"
+          if [ -d "bin/packages" ]; then
+            tar -czf bin/targets/ipq807x/generic/compiled_packages.tar.gz -C bin packages
+            echo "-> Pakiety zostały pomyślnie spakowane do compiled_packages.tar.gz"
+          else
+            echo "-> OSTRZEŻENIE: Nie znaleziono katalogu bin/packages!"
+          fi
 
       - name: Publish release
         id: release
@@ -417,6 +439,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "OpenWrt Build $date (${{ matrix.nss_version }})" \
             --notes-file release_notes.md \
+            --target "$GITHUB_SHA" \
             "${renamed_assets[@]}"
 
           {
