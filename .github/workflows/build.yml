@@ -350,26 +350,31 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          echo "### Usuwanie pakietów dahdi-linux i rtl8812au-ct ###"
+          echo "### Usuwanie pakietów dahdi-linux i rtl8812au-ct ponieważ się nie kompilują ###"
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-          echo "### Korekta Makefile xdp-tools przed kompilacją ###"
-          if [ -f "package/network/utils/xdp-tools/Makefile" ]; then
-            # 1. Wymuszamy linker bfd na poziomie zmiennych pakietu
-            sed -i '/TARGET_LDFLAGS +=/s/$/ -fuse-ld=bfd/' package/network/utils/xdp-tools/Makefile
+      - name: Fix xdp-tools - gc-sections error
+        working-directory: openwrt
+        run: |
+          echo "### Przygotowanie źródeł xdp-tools ###"
+          # Wymuszamy na OpenWrt rozpakowanie i przygotowanie katalogu build_dir dla xdp-tools
+          make package/network/utils/xdp-tools/prepare V=s || true
 
-            # 2. Bezpośrednio w linii CONFIGURE_ARGS odfiltrowujemy mold oraz gc-sections
-            # shellcheck disable=SC2016
-            sed -i '/CONFIGURE_ARGS +=/i TARGET_LDFLAGS_CLEANED=\$(subst -fuse-ld=mold,,\$(subst -Wl\\,--gc-sections,,\$(TARGET_LDFLAGS))) -fuse-ld=bfd' package/network/utils/xdp-tools/Makefile
+          echo "### Modyfikacja libxdp Makefile w build_dir ###"
+          TARGET_MAKE=$(find build_dir/ -name "Makefile" | grep "xdp-tools" | grep "libxdp/Makefile" || true)
 
-            # 3. Nadpisujemy przekazywanie LDFLAGS w CONFIGURE_ARGS nową, czystą zmienną
-            # shellcheck disable=SC2016
-            sed -i 's|CONFIGURE_ARGS +=|CONFIGURE_ARGS += LDFLAGS="\$(TARGET_LDFLAGS_CLEANED)"|' package/network/utils/xdp-tools/Makefile
-
-            echo "-> Makefile dla xdp-tools pomyślnie zrekonstruowany."
+          if [ -n "$TARGET_MAKE" ] && [ -f "$TARGET_MAKE" ]; then
+            # Usuwamy flagę --gc-sections z wywołania konkretnego polecenia w Makefile
+            sed -i 's/\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary/\$(LD) -r -nostdlib -Wl,-z,noexecstack/g' "$TARGET_MAKE"
+            echo "-> Plik $TARGET_MAKE został pomyślnie zmodyfikowany."
           else
-            echo "-> BŁĄD: Nie znaleziono Makefile dla xdp-tools!"
+            echo "-> OSTRZEŻENIE: Nie znaleziono jeszcze pliku Makefile w build_dir. Zostanie zmodyfikowany w locie."
+            # Zabezpieczenie na wypadek, gdyby OpenWrt rozpakowywał pakiet później - modyfikujemy u źródła w feeds
+            FEED_MAKE=$(find package/ -name "Makefile" | grep "xdp-tools" | set +e | xargs grep -l "xdp-dispatcher.embed.o" 2>/dev/null || true)
+            if [ -n "$FEED_MAKE" ] && [ -f "$FEED_MAKE" ]; then
+              sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$FEED_MAKE"
+            fi
           fi
 
       - name: Build
@@ -392,15 +397,19 @@ jobs:
       - name: Generate checksums
         working-directory: openwrt
         run: |
-          md5sum bin/targets/ipq807x/generic/*firmware* > bin/targets/ipq807x/generic/md5sums
-          sha256sum bin/targets/ipq807x/generic/*firmware* > bin/targets/ipq807x/generic/sha256sums
+          cd bin/targets/qualcommax/ipq807x/
+          # Usuwamy stare pliki sum, jeśli istnieją, żeby nie zapętlić skryptu
+          rm -f md5sums sha256sums
+          # Generujemy sumy dla wszystkich plików w katalogu
+          md5sum * > md5sums
+          sha256sum * > sha256sums
 
       - name: Pack APK Packages
         working-directory: openwrt
         run: |
           echo "### Pakowanie skompilowanych pakietów .apk ###"
           if [ -d "bin/packages" ]; then
-            tar -czf bin/targets/ipq807x/generic/compiled_packages.tar.gz -C bin packages
+            tar -czf bin/targets/qualcommax/ipq807x/compiled_packages.tar.gz -C bin packages
             echo "-> Pakiety zostały pomyślnie spakowane do compiled_packages.tar.gz"
           else
             echo "-> OSTRZEŻENIE: Nie znaleziono katalogu bin/packages!"
@@ -424,6 +433,7 @@ jobs:
             echo "- **Upstream**: \`${MAIN_SHA}\`"
             echo "- **NSS**: \`${NSS_SHA}\`"
             echo "- **Trigger**: \`${GITHUB_EVENT_NAME}\`"
+            echo "- **Compiled by**: @Payti"
           } >release_notes.md
 
           mapfile -t assets < <(find openwrt/bin/targets/qualcommax/ipq807x/ -type f -not -path "*/packages/*")
