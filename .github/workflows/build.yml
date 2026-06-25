@@ -361,10 +361,11 @@ jobs:
 
             # 2. Bezpośrednio w linii CONFIGURE_ARGS odfiltrowujemy mold oraz gc-sections
             # shellcheck disable=SC2016
-            sed -i '/CONFIGURE_ARGS +=/i TARGET_LDFLAGS_CLEANED=$(subst -fuse-ld=mold,,$(subst -Wl\,--gc-sections,,$(TARGET_LDFLAGS))) -fuse-ld=bfd' package/network/utils/xdp-tools/Makefile
+            sed -i '/CONFIGURE_ARGS +=/i TARGET_LDFLAGS_CLEANED=\$(subst -fuse-ld=mold,,\$(subst -Wl\\,--gc-sections,,\$(TARGET_LDFLAGS))) -fuse-ld=bfd' package/network/utils/xdp-tools/Makefile
 
             # 3. Nadpisujemy przekazywanie LDFLAGS w CONFIGURE_ARGS nową, czystą zmienną
-            sed -i 's|CONFIGURE_ARGS +=|CONFIGURE_ARGS += LDFLAGS="$(TARGET_LDFLAGS_CLEANED)"|' package/network/utils/xdp-tools/Makefile
+            # shellcheck disable=SC2016
+            sed -i 's|CONFIGURE_ARGS +=|CONFIGURE_ARGS += LDFLAGS="\$(TARGET_LDFLAGS_CLEANED)"|' package/network/utils/xdp-tools/Makefile
 
             echo "-> Makefile dla xdp-tools pomyślnie zrekonstruowany."
           else
