@@ -357,19 +357,24 @@ jobs:
       - name: Fix xdp-tools gc-sections error
         working-directory: openwrt
         run: |
-          echo "### Tworzenie skryptu patchującego dla xdp-tools ###"
+          echo "### Tworzenie minimalistycznego patcha dla xdp-tools ###"
 
           XDP_DIR=$(find package/ -type d -name "xdp-tools" 2>/dev/null | head -n 1)
 
           if [ -n "$XDP_DIR" ] && [ -d "$XDP_DIR" ]; then
             mkdir -p "$XDP_DIR/patches"
 
-            # Tworzymy skrypt jednowierszowo przy użyciu printf i cudzysłowów
-            # To całkowicie ucisza linter YAML, bo nie ma tu łamania linii ani wiszących dwukropków
-            printf '%s\n' '#!/bin/sh' '[ -f lib/libxdp/Makefile ] && sed -i "s/-Wl,-z,noexecstack,--format=binary/-fuse-ld=bfd -Wl,-z,noexecstack/g" lib/libxdp/Makefile' > "$XDP_DIR/patches/999-fix-mold-link.sh"
+            # Tworzymy bezkontekstowy plik patcha, który wyszuka linię w dowolnym miejscu pliku.
+            # Użycie pojedynczych cudzysłowów w printf gwarantuje 100% spokój z edytorem YAML.
+            printf '%s\n' \
+              '--- a/lib/libxdp/Makefile' \
+              '+++ b/lib/libxdp/Makefile' \
+              '@@ -135,2 +135,2 @@' \
+              '-	$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o $@ $<' \
+              '+	$(LD) -fuse-ld=bfd -r -nostdlib -Wl,-z,noexecstack -o $@ $<' \
+              > "$XDP_DIR/patches/999-fix-mold-link.patch"
 
-            chmod +x "$XDP_DIR/patches/999-fix-mold-link.sh"
-            echo "-> Skrypt automatycznej poprawki został pomyślnie utworzony."
+            echo "-> Patch został pomyślnie wygenerowany."
           else
             echo "-> OSTRZEŻENIE: Nie znaleziono katalogu źródłowego xdp-tools w feeds!"
           fi
