@@ -357,24 +357,27 @@ jobs:
       - name: Fix xdp-tools gc-sections error
         working-directory: openwrt
         run: |
-          echo "### Przygotowanie źródeł xdp-tools ###"
-          make package/network/utils/xdp-tools/prepare V=s || true
+          echo "### Wstrzykiwanie patcha naprawczego dla xdp-tools ###"
 
-          echo "### Modyfikacja libxdp Makefile w build_dir ###"
-          # Szukamy właściwego pliku za pomocą find i zapisu do zmiennej basha bez pipe do set
-          TARGET_MAKE=$(find build_dir/ -type f -path "*/xdp-tools*/lib/libxdp/Makefile" 2>/dev/null | head -n 1)
+          XDP_DIR=$(find package/ -type d -name "xdp-tools" 2>/dev/null | head -n 1)
 
-          if [ -n "$TARGET_MAKE" ] && [ -f "$TARGET_MAKE" ]; then
-            # Zmieniamy definicję linkowania bezpośrednio podstawiając tekst (bez kłopotliwych zmiennych)
-            sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$TARGET_MAKE"
-            echo "-> Plik $TARGET_MAKE został pomyślnie skorygowany."
+          if [ -n "$XDP_DIR" ] && [ -d "$XDP_DIR" ]; then
+            mkdir -p "$XDP_DIR/patches"
+
+            # Zapobiegamy błędom parsera YAML owijając patch w bezpieczny blok printf
+            # shellcheck disable=SC2016
+            printf "%s\n" \
+              "--- a/lib/libxdp/Makefile" \
+              "+++ b/lib/libxdp/Makefile" \
+              "@@ -134,3 +134,3 @@" \
+              " xdp-dispatcher.embed.o: xdp-dispatcher.o" \
+              "-	\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o \$@ \$<" \
+              "+	\$(LD) -fuse-ld=bfd -r -nostdlib -Wl,-z,noexecstack -o \$@ \$<" \
+              > "$XDP_DIR/patches/999-fix-libxdp-link-flags.patch"
+
+            echo "-> Patch został pomyślnie utworzony w: $XDP_DIR/patches/"
           else
-            echo "-> OSTRZEŻENIE: Nie znaleziono pliku w build_dir. Szukam w katalogu feedów..."
-            FEED_MAKE=$(find package/ -type f -path "*/xdp-tools*/lib/libxdp/Makefile" 2>/dev/null | head -n 1)
-            if [ -n "$FEED_MAKE" ] && [ -f "$FEED_MAKE" ]; then
-              sed -i 's/-Wl,-z,noexecstack,--format=binary/-Wl,-z,noexecstack/g' "$FEED_MAKE"
-              echo "-> Skorygowano plik u źródła: $FEED_MAKE"
-            fi
+            echo "-> OSTRZEŻENIE: Nie znaleziono katalogu źródłowego xdp-tools w feeds!"
           fi
 
       - name: Build
@@ -398,10 +401,16 @@ jobs:
         working-directory: openwrt
         run: |
           cd bin/targets/qualcommax/ipq807x/
+
+          # Czyścimy stare pliki sum, żeby nie liczyć skrótów z samych siebie
           rm -f md5sums sha256sums
-          # Użycie ./* zamiast * ucisza ostrzeżenie shellcheck SC2035
-          md5sum ./* > md5sums
-          sha256sum ./* > sha256sums
+
+          echo "### Generowanie sum kontrolnych dla obrazów i zawartości 'packages' ###"
+          # Szukamy tylko rzeczywistych plików (-type f), ignorując katalogi jako obiekty
+          find . -type f -print0 | xargs -0 md5sum > md5sums
+          find . -type f -print0 | xargs -0 sha256sum > sha256sums
+
+          echo "-> Sumy kontrolne zostały pomyślnie wygenerowane."
 
       - name: Pack APK Packages
         working-directory: openwrt
