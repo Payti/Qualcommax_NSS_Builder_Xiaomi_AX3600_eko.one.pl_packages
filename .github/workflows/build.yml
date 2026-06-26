@@ -364,7 +364,7 @@ jobs:
           if [ -n "$XDP_DIR" ] && [ -d "$XDP_DIR" ]; then
             mkdir -p "$XDP_DIR/patches"
 
-            # Tworzymy patch bez ścisłego indeksu linii (@@ -1,1 +1,1 @@). 
+            # Tworzymy patch bez ścisłego indeksu linii (@@ -1,1 +1,1 @@).
             # Narzędzie patch przeskanuje cały plik i podmieni linię niezależnie od jej przesunięcia.
             # shellcheck disable=SC2016
             printf '%s\n' \
