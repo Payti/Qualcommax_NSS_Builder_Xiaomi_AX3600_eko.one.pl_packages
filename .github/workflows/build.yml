@@ -392,7 +392,7 @@ jobs:
           else
             echo "-> OSTRZEŻENIE: Nie znaleziono katalogu źródłowego xdp-tools w feeds!"
           fi
-          
+
       - name: Build
         working-directory: openwrt
         run: |
