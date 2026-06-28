@@ -362,12 +362,10 @@ jobs:
           find openwrt/build_dir/ -type f -path "*/xdp-tools-*/lib/libxdp/Makefile" | while read -r makefile; do
             echo "Modyfikuję plik: $makefile"
 
-            # Definiujemy wzorce bez ukośników ucieczki, aby shellcheck (SC2016) nie krzyczał.
-            # W pojedynczych cudzysłowach znaki $ i tak są traktowane jako czysty tekst.
-            ORIGINAL_LINE='$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o $@ $<'
-            REPLACEMENT_LINE='$(LD) -r -nostdlib -Wl,-z,noexecstack -o $@ $< -fuse-ld=bfd'
-
-            sed -i "s|$ORIGINAL_LINE|$REPLACEMENT_LINE|g" "$makefile"
+            # Używamy uogólnionego wyrażenia regularnego, aby ominąć wpisywanie znaków dolara.
+            # Dopasowujemy fragment: (DowolnyZnak)LD) -r -nostdlib ... -o (DowolnyZnak)@ (DowolnyZnak)<
+            # i zastępujemy go wersją z wymuszonym bfd na końcu linii.
+            sed -i 's|.*LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o .*@ .*<|	$(LD) -r -nostdlib -Wl,-z,noexecstack -o $@ $< -fuse-ld=bfd|g' "$makefile"
           done
 
       - name: Build
