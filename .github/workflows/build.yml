@@ -354,44 +354,16 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-      - name: Fix xdp-tools gc-sections error
-        working-directory: openwrt
+      - name: Force BFD linker for libxdp in build_dir
         run: |
-          echo "### Zaawansowane generowanie patcha dla xdp-tools ###"
-
-          XDP_DIR=$(find package/ -type d -name "xdp-tools" 2>/dev/null | head -n 1)
-
-          if [ -n "$XDP_DIR" ] && [ -d "$XDP_DIR" ]; then
-            mkdir -p "$XDP_DIR/patches"
-
-            TMP_PATCH_DIR=$(mktemp -d)
-            cd "$TMP_PATCH_DIR"
-
-            curl -sSL "https://raw.githubusercontent.com/xdp-project/xdp-tools/v1.6.3/lib/libxdp/Makefile" -o Makefile.orig
-            cp Makefile.orig Makefile.mod
-
-            # Zamieniamy całą linijkę tak, aby flaga wymuszenia bfd była na samym końcu,
-            # po przekazaniu wszystkich zmiennych środowiskowych i LDFLAGS z OpenWrt.
-            # shellcheck disable=SC2016
-            sed -i 's/\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o \$@ \$</\$(LD) -r -nostdlib -Wl,-z,noexecstack -o \$@ \$< -fuse-ld=bfd/g' Makefile.mod
-
-            git init -q
-            git config user.name "Builder"
-            git config user.email "builder@internal"
-            mv Makefile.orig Makefile
-            git add Makefile
-            git commit -m "orig" -q
-            mv Makefile.mod Makefile
-
-            git diff --no-prefix | sed 's|^--- Makefile|--- a/lib/libxdp/Makefile|; s|^+++ Makefile|+++ b/lib/libxdp/Makefile|' > "$GITHUB_WORKSPACE/openwrt/$XDP_DIR/patches/999-fix-mold-link.patch"
-
-            cd "$GITHUB_WORKSPACE/openwrt"
-            rm -rf "$TMP_PATCH_DIR"
-
-            echo "-> Wymuszenie bfd na końcu linii zostało wygenerowane."
-          else
-            echo "-> OSTRZEŻENIE: Nie znaleziono katalogu źródłowego xdp-tools w feeds!"
-          fi
+          echo "### Modyfikacja Makefile bezpośrednio w strukturze build_dir ###"
+          # Szukamy pliku Makefile wewnątrz katalogu budowania xdp-tools
+          find openwrt/build_dir/ -type f -path "*/xdp-tools-*/lib/libxdp/Makefile" | while read -r makefile; do
+            echo "Modyfikuję plik: $makefile"
+            # Usuwamy problematyczną flagę --format=binary i wstrzykujemy bfd na sam koniec linii,
+            # aby nadpisać globalne -fuse-ld=mold dodawane przez LDFLAGS
+            sed -i 's/\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o \$@ \$</\$(LD) -r -nostdlib -Wl,-z,noexecstack -o \$@ \$< -fuse-ld=bfd/g' "$makefile"
+          done
 
       - name: Build
         working-directory: openwrt
