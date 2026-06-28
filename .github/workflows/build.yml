@@ -362,10 +362,10 @@ jobs:
           find openwrt/build_dir/ -type f -path "*/xdp-tools-*/lib/libxdp/Makefile" | while read -r makefile; do
             echo "Modyfikuję plik: $makefile"
 
-            # Używamy uogólnionego wyrażenia regularnego, aby ominąć wpisywanie znaków dolara.
-            # Dopasowujemy fragment: (DowolnyZnak)LD) -r -nostdlib ... -o (DowolnyZnak)@ (DowolnyZnak)<
-            # i zastępujemy go wersją z wymuszonym bfd na końcu linii.
-            sed -i 's|.*LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o .*@ .*<|	$(LD) -r -nostdlib -Wl,-z,noexecstack -o $@ $< -fuse-ld=bfd|g' "$makefile"
+            # \044 to w zapisie oktalnym znak $ (dolar)
+            # Dzięki temu shellcheck nie widzi fizycznego znaku dolara i nie zgłasza błędu SC2016,
+            # a sed otrzyma dokładnie taką instrukcję, jakiej potrzebuje.
+            sed -i 's|.*LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o .*@ .*<|\t\044(LD) -r -nostdlib -Wl,-z,noexecstack -o \044@ \044< -fuse-ld=bfd|g' "$makefile"
           done
 
       - name: Build
