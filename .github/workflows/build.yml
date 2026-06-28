@@ -357,12 +357,17 @@ jobs:
       - name: Force BFD linker for libxdp in build_dir
         run: |
           echo "### Modyfikacja Makefile bezpośrednio w strukturze build_dir ###"
+
           # Szukamy pliku Makefile wewnątrz katalogu budowania xdp-tools
           find openwrt/build_dir/ -type f -path "*/xdp-tools-*/lib/libxdp/Makefile" | while read -r makefile; do
             echo "Modyfikuję plik: $makefile"
-            # Usuwamy problematyczną flagę --format=binary i wstrzykujemy bfd na sam koniec linii,
-            # aby nadpisać globalne -fuse-ld=mold dodawane przez LDFLAGS
-            sed -i 's/\$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o \$@ \$</\$(LD) -r -nostdlib -Wl,-z,noexecstack -o \$@ \$< -fuse-ld=bfd/g' "$makefile"
+
+            # Definiujemy wzorce bez ukośników ucieczki, aby shellcheck (SC2016) nie krzyczał.
+            # W pojedynczych cudzysłowach znaki $ i tak są traktowane jako czysty tekst.
+            ORIGINAL_LINE='$(LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o $@ $<'
+            REPLACEMENT_LINE='$(LD) -r -nostdlib -Wl,-z,noexecstack -o $@ $< -fuse-ld=bfd'
+
+            sed -i "s|$ORIGINAL_LINE|$REPLACEMENT_LINE|g" "$makefile"
           done
 
       - name: Build
