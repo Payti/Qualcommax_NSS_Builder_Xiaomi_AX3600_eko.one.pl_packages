@@ -363,6 +363,7 @@ jobs:
 
       - name: Patch xdp-tools for mold compatibility (use bfd)
         run: |
+          # shellcheck disable=SC2016
           sed -i 's/\$(TARGET_LDFLAGS)/\$(filter-out -fuse-ld=mold,\$(TARGET_LDFLAGS)) -fuse-ld=bfd/g' openwrt/package/network/utils/xdp-tools/Makefile
 
       - name: Build
