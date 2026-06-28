@@ -361,19 +361,9 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-      - name: Force BFD linker for libxdp in build_dir
+      - name: Patch xdp-tools for mold compatibility (use bfd)
         run: |
-          echo "### Modyfikacja Makefile bezpośrednio w strukturze build_dir ###"
-
-          # Szukamy pliku Makefile wewnątrz katalogu budowania xdp-tools
-          find openwrt/build_dir/ -type f -path "*/xdp-tools-*/lib/libxdp/Makefile" | while read -r makefile; do
-            echo "Modyfikuję plik: $makefile"
-
-            # \044 to w zapisie oktalnym znak $ (dolar)
-            # Dzięki temu shellcheck nie widzi fizycznego znaku dolara i nie zgłasza błędu SC2016,
-            # a sed otrzyma dokładnie taką instrukcję, jakiej potrzebuje.
-            sed -i 's|.*LD) -r -nostdlib -Wl,-z,noexecstack,--format=binary -o .*@ .*<|\t\044(LD) -r -nostdlib -Wl,-z,noexecstack -o \044@ \044< -fuse-ld=bfd|g' "$makefile"
-          done
+          sed -i 's/\$(TARGET_LDFLAGS)/\$(filter-out -fuse-ld=mold,\$(TARGET_LDFLAGS)) -fuse-ld=bfd/g' openwrt/package/network/utils/xdp-tools/Makefile
 
       - name: Build
         working-directory: openwrt
