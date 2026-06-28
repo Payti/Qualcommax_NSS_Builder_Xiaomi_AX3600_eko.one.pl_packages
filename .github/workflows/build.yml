@@ -361,10 +361,16 @@ jobs:
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
 
-      - name: Patch xdp-tools for mold compatibility (use bfd)
+      - name: Patch xdp-tools for mold compatibility
         run: |
           # shellcheck disable=SC2016
-          sed -i 's/\$(TARGET_LDFLAGS)/\$(filter-out -fuse-ld=mold,\$(TARGET_LDFLAGS)) -fuse-ld=bfd/g' openwrt/package/network/utils/xdp-tools/Makefile
+          if grep -q 'TARGET_LDFLAGS' openwrt/package/network/utils/xdp-tools/Makefile; then
+            echo "SUCCESS: Found TARGET_LDFLAGS in xdp-tools Makefile. Applying mold and gc-sections patch..."
+            sed -i 's/\$(TARGET_LDFLAGS)/\$(filter-out -fuse-ld=mold -Wl\,--gc-sections,\$(TARGET_LDFLAGS)) -fuse-ld=bfd/g' openwrt/package/network/utils/xdp-tools/Makefile
+            echo "SUCCESS: Patch applied successfully."
+          else
+            echo "WARNING: TARGET_LDFLAGS not found in xdp-tools Makefile! Patch could not be applied."
+          fi
 
       - name: Build
         working-directory: openwrt
