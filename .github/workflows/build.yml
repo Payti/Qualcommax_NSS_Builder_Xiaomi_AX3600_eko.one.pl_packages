@@ -363,9 +363,9 @@ jobs:
 
       - name: Patch xdp-tools for mold compatibility
         run: |
+          # shellcheck disable=SC2016
           if [ -f openwrt/package/network/utils/xdp-tools/Makefile ]; then
             echo "SUCCESS: Found xdp-tools Makefile. Injecting safe LDFLAGS configuration..."
-            # Wymuszamy, aby xdp-tools używało klasycznego bfd i czyścimy problematyczne flagi linkera wewnątrz build_env
             sed -i '/include \$(INCLUDE_DIR)\/package.mk/i TARGET_LDFLAGS += -fuse-ld=bfd' openwrt/package/network/utils/xdp-tools/Makefile
             echo "SUCCESS: Patch applied successfully."
           else
