@@ -363,13 +363,13 @@ jobs:
 
       - name: Patch xdp-tools for mold compatibility
         run: |
-          # shellcheck disable=SC2016
-          if grep -q 'TARGET_LDFLAGS' openwrt/package/network/utils/xdp-tools/Makefile; then
-            echo "SUCCESS: Found TARGET_LDFLAGS in xdp-tools Makefile. Applying mold and gc-sections patch..."
-            sed -i 's/\$(TARGET_LDFLAGS)/\$(filter-out -fuse-ld=mold -Wl\,--gc-sections,\$(TARGET_LDFLAGS)) -fuse-ld=bfd/g' openwrt/package/network/utils/xdp-tools/Makefile
+          if [ -f openwrt/package/network/utils/xdp-tools/Makefile ]; then
+            echo "SUCCESS: Found xdp-tools Makefile. Injecting safe LDFLAGS configuration..."
+            # Wymuszamy, aby xdp-tools używało klasycznego bfd i czyścimy problematyczne flagi linkera wewnątrz build_env
+            sed -i '/include \$(INCLUDE_DIR)\/package.mk/i TARGET_LDFLAGS += -fuse-ld=bfd' openwrt/package/network/utils/xdp-tools/Makefile
             echo "SUCCESS: Patch applied successfully."
           else
-            echo "WARNING: TARGET_LDFLAGS not found in xdp-tools Makefile! Patch could not be applied."
+            echo "WARNING: xdp-tools Makefile not found! Skipping patch."
           fi
 
       - name: Build
