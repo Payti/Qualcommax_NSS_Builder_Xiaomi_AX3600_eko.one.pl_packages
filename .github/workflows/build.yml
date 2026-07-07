@@ -364,20 +364,10 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          echo "### Usuwanie pakietów dahdi-linux i rtl8812au-ct ponieważ się nie kompilują ###"
+          echo "### Usuwanie pakietów dahdi-linux, rtl8812au-ct, xdp-tools ponieważ nie kompilują się!###"
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
-
-      - name: Patch xdp-tools for mold compatibility
-        run: |
-          # shellcheck disable=SC2016
-          if [ -f openwrt/package/network/utils/xdp-tools/Makefile ]; then
-            echo "SUCCESS: Found xdp-tools Makefile. Injecting safe LDFLAGS configuration..."
-            sed -i '/include \$(INCLUDE_DIR)\/package.mk/i TARGET_LDFLAGS += -fuse-ld=bfd' openwrt/package/network/utils/xdp-tools/Makefile
-            echo "SUCCESS: Patch applied successfully."
-          else
-            echo "WARNING: xdp-tools Makefile not found! Skipping patch."
-          fi
+          rm -rf package/network/utils/xdp-tools
 
       - name: Build
         working-directory: openwrt
