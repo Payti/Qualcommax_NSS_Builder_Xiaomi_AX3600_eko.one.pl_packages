@@ -156,33 +156,91 @@ jobs:
             # Wyczyszczenie dotychczasowych flag wersji NSS, aby nie było konfliktów
             sed -i '/CONFIG_NSS_FIRMWARE_VERSION_/d' "$CONFIG_FILE"
 
-            # Wstrzyknięcie odpowiedniej flagi na podstawie wybranego wariantu macierzy nss_11.4 oraz modułów NSS i pakietów
+            # Wstrzyknięcie odpowiedniej flagi na podstawie wybranego wariantu macierzy
             if [ "${{ matrix.nss_version }}" = "nss_11.4" ]; then
               {
-                echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=y"
+                # Profil pamięci dla IPQ
                 echo "CONFIG_IPQ_MEM_PROFILE_512=y"
                 echo "CONFIG_KERNEL_IPQ_MEM_PROFILE=512"
                 echo "CONFIG_PACKAGE_kmod-qca-mcs=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-gre=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-igs=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-lag-mgr=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-map-t=y"
+
+                # =========================================================================
+                # ABSOLUTNY, MAKSYMALNY I TOTALNY ZESTAW NSS DLA REPOZYTORIUM (11.4 / MAX)
+                # =========================================================================
+
+                # 1. Wersja Firmware oraz Podstawa Sterownika Jądra
+                echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=y"
+                echo "CONFIG_PACKAGE_nss-firmware=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv=y"
+
+                # 2. Architektura bazowa, Sieć, Przekierowania i Filtry
+                echo "CONFIG_PACKAGE_kmod-qca-nss-ifb=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-netlink=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-mirror=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-vlan=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-netfilter=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-ecm=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-msc=y"
+
+                # 3. Klienci Sieciowi, Tunele, Wi-Fi i Protokóły WAN
+                echo "CONFIG_PACKAGE_qca-nss-clients=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-clients=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-pptp=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-l2tpv2=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-gre=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-gre-redir=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-map-t=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tun6rd=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tunipip6=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-vxlanmgr=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-pvxlan=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-capwap=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tproxy=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-igs=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-lag-mgr=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-wifi-meshmgr=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-netlink=y"
-                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-mirror=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-wlan-mgr=y"
+
+                # 4. Podsystemy Kryptograficzne, Bezpieczeństwo i Sprzętowy OpenVPN (v1 + v2)
                 echo "CONFIG_PACKAGE_kmod-qca-nss-crypto=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-crypto-v2=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-cfi=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-cfi-v2=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-cfi-cryptoapi=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-cfi-ocf=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-macsec=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ipsec=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-dtls=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tlsmgr=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-crypto-tool=y"
                 echo "CONFIG_PACKAGE_qca-nss-crypto-tool=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ovpn-mgr=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ovpn-link=y"
+
+                # 5. Odciążanie Głosu / Audio (DSP / PCM)
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-pcm=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ccp=y"
+
+                # 6. Diagnostyka, Testy i Userspace (Wszystkie możliwe narzędzia)
+                echo "CONFIG_PACKAGE_nss-userspace-oss=y"
+                echo "CONFIG_PACKAGE_nss-userspace-oss-lib=y"
+                echo "CONFIG_PACKAGE_nss-userspace-oss-nl=y"
+                echo "CONFIG_PACKAGE_nssinfo=y"
+                echo "CONFIG_PACKAGE_libnl-nss=y"
+                echo "CONFIG_PACKAGE_qca-nss-crypto-perf=y"
+                echo "CONFIG_PACKAGE_nss-utils=y"
+                echo "CONFIG_PACKAGE_qca-nss-macsec-utils=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-profile=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-test=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-pktinject=y"
+
+                # =========================================================================
+                # POZOSTAŁE PAKIETY I MODUŁY SYSTEMOWE KONFIGURACJI
+                # =========================================================================
                 echo "CONFIG_ALL_KMODS=y"
                 echo "CONFIG_ALL_NONSHARED=y"
                 echo "CONFIG_PACKAGE_ip-bridge=y"
@@ -259,7 +317,7 @@ jobs:
                 echo "CONFIG_PACKAGE_ethtool=y"
                 echo "CONFIG_PACKAGE_gre=y"
               } >> "$CONFIG_FILE"
-              echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_11_4=y and add NSS modules + packages"
+              echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_11_4=y and added all absolute NSS components"
             else
               echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> "$CONFIG_FILE"
               echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_12_5=y"
