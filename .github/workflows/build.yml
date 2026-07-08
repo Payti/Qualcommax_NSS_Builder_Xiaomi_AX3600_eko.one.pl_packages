@@ -322,6 +322,10 @@ jobs:
               echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> "$CONFIG_FILE"
               echo "Successfully patched config with CONFIG_NSS_FIRMWARE_VERSION_12_5=y"
             fi
+
+            # Ponowne skopiowanie pliku config i przeładowanie w openwrt, aby prepare-build.sh zaaplikował zmiany
+            cp "$CONFIG_FILE" ${{ github.workspace }}/openwrt/.config
+            make -C ${{ github.workspace }}/openwrt defconfig
           fi
 
       - name: Prepare build environment
