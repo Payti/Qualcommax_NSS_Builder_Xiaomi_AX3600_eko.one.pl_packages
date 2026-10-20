@@ -201,6 +201,7 @@ jobs:
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-l2tpv2=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-gre=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-gre-redir=y"
+                echo "CONFIG_PACKAGE_kmod-qca-nss-drv-eogremgr=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-map-t=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tun6rd=y"
                 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-tunipip6=y"
