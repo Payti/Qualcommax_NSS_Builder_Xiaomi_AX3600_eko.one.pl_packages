@@ -2,7 +2,7 @@
 # Prepare an OpenWrt source tree for build:
 #   - apply patches from $BUILDER_REPO/patches/*.patch (if any)
 #   - append custom feeds from FEEDS_LINES
-#   - run feeds update/install
+#   - run feeds update/install + apply feed fixes
 #   - copy device .config and run defconfig
 #   - disable bundling of custom feeds into the image
 #
@@ -29,7 +29,7 @@ COMMON_FILES="${COMMON_FILES:-$BUILDER_REPO/common/files}"
 
 cd "$OPENWRT_DIR"
 
-# 1. Apply patches.
+# 1. Apply patches to OpenWrt tree.
 patches_dir="$BUILDER_REPO/patches"
 if compgen -G "$patches_dir/*.patch" >/dev/null; then
   log::info "Applying patches from $patches_dir"
@@ -38,32 +38,94 @@ if compgen -G "$patches_dir/*.patch" >/dev/null; then
     git apply --verbose "$patch"
   done < <(find "$patches_dir" -maxdepth 1 -type f -name '*.patch' | sort)
 else
-  log::info "No patches to apply."
+  log::info "No tree patches to apply."
 fi
 
 # 2. Configure feeds.
 [[ -f feeds.conf ]] || cp feeds.conf.default feeds.conf
 
+log::info "Disabling broken third-party feeds (video) to prevent Kconfig recursion"
+sed -i '/video/d' feeds.conf || true
+
 log::info "Appending custom feeds:"
 while IFS= read -r line; do
+  line="${line%$'\r'}"
   [[ -z "$line" ]] && continue
   log::info "  $line"
-  echo "$line" >>feeds.conf
+  grep -qxF "$line" feeds.conf || echo "$line" >>feeds.conf
 done <<<"$FEEDS_LINES"
 
-# Update + install each custom feed individually so failures are obvious,
-# then update + install everything else.
-while IFS= read -r line; do
-  [[ -z "$line" ]] && continue
-  feed_name="$(awk '{print $2}' <<<"$line")"
-  log::info "Updating feed: $feed_name"
-  ./scripts/feeds update "$feed_name"
-  ./scripts/feeds install -a -p "$feed_name"
-done <<<"$FEEDS_LINES"
-
-log::info "Updating + installing all feeds"
+log::info "Updating all feeds"
 ./scripts/feeds update -a
-./scripts/feeds install -a
+
+# 2a. Remove broken packages causing Kconfig recursive dependency errors
+log::info "Removing recursive dependency packages (squeezelite, qt5base)"
+rm -rf feeds/obsy/squeezelite package/feeds/obsy/squeezelite
+rm -rf feeds/video/frameworks/qt5/qt5base package/feeds/video/qt5base
+
+# 2b. Ensure libffi exists (moved from feeds/packages to core in newer OpenWrt)
+if [[ ! -d "package/libs/libffi" && ! -d "feeds/packages/libs/libffi" ]]; then
+  log::info "Restoring missing package/libs/libffi from upstream openwrt/main"
+  tmp_libffi="$(mktemp -d)"
+  git clone --depth 1 --filter=blob:none --sparse https://github.com/openwrt/openwrt.git "$tmp_libffi"
+  git -C "$tmp_libffi" sparse-checkout set package/libs/libffi
+  cp -a "$tmp_libffi/package/libs/libffi" package/libs/libffi
+  rm -rf "$tmp_libffi"
+fi
+
+# 2c. Patch glib2-gobject Makefile for explicit +libffi dependency
+if [[ -f "feeds/packages/libs/glib2/Makefile" ]]; then
+  log::info "Ensuring glib2-gobject has +libffi dependency"
+  sed -i '/^define Package\/glib2-gobject$/,/^endef$/ { /DEPENDS:=/ { /+libffi/! s/DEPENDS:=.*/& +libffi/ } }' \
+    feeds/packages/libs/glib2/Makefile
+fi
+
+# 2d. Fix attr 2.6.0 build on kernels < 6.13 (missing struct xattr_args in UAPI <linux/xattr.h>)
+if [[ -d "feeds/packages/utils/attr" ]]; then
+  log::info "Adding struct xattr_args fallback patch for attr 2.6.0"
+  mkdir -p feeds/packages/utils/attr/patches
+  cat << 'EOF' > feeds/packages/utils/attr/patches/100-fix-missing-xattr_args.patch
+--- a/libmisc/xattrat.c
++++ b/libmisc/xattrat.c
+@@ -15,6 +15,16 @@
+ 
+ #include "config.h"
+ 
++#include <linux/types.h>
++#include <linux/xattr.h>
++#ifndef XATTR_ARGS_SIZE_VER0
++struct xattr_args {
++__u64 value;
++__u32 size;
++__u32 flags;
++};
++#define XATTR_ARGS_SIZE_VER0 16
++#endif
++
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <stdlib.h>
+EOF
+fi
+
+# 2e. Apply local patches to feed packages (patches/feeds/*/*.patch) if present
+shopt -s nullglob
+for p in "$BUILDER_REPO"/patches/feeds/*/*.patch; do
+  feed="feeds/$(basename "$(dirname "$p")")"
+  if patch -p1 -d "$feed" --dry-run --forward < "$p" >/dev/null 2>&1; then
+    log::info "Patching $feed with $(basename "$p")"
+    patch -p1 -d "$feed" --forward < "$p"
+  elif patch -p1 -d "$feed" --dry-run --reverse < "$p" >/dev/null 2>&1; then
+    log::info "Skipping $(basename "$p") (already applied)"
+  else
+    log::die "$(basename "$p") does not apply to $feed"
+  fi
+done
+shopt -u nullglob
+
+log::info "Installing all feeds"
+rm -rf tmp
+./scripts/feeds install -a -f
 
 # 3. Drop in device .config and resolve.
 log::info "Loading device config: $DEVICE_DIR/config"
@@ -74,6 +136,7 @@ make defconfig
 #    src-git but don't want every package shipped by default).
 log::info "Disabling CONFIG_FEED_<custom> entries"
 while IFS= read -r line; do
+  line="${line%$'\r'}"
   [[ -z "$line" ]] && continue
   feed_name="$(awk '{print $2}' <<<"$line")"
   sed -i "s/^CONFIG_FEED_${feed_name}=.*/# CONFIG_FEED_${feed_name} is not set/" .config || true
