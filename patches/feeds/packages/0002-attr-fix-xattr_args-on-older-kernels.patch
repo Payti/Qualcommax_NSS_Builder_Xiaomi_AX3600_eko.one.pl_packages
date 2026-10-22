@@ -2,4 +2,4 @@
 +++ b/utils/attr/Makefile
 @@ -40,3 +40,5 @@
 +
-+TARGET_CFLAGS += -D'XATTR_ARGS_SIZE_VER0=16'
++TARGET_CFLAGS += -DXATTR_ARGS_SIZE_VER0=16
