@@ -1,26 +1,5 @@
---- a/utils/attr/patches/100-fix-missing-xattr_args.patch
-+++ b/utils/attr/patches/100-fix-missing-xattr_args.patch
-@@ -0,0 +1,22 @@
-+--- a/libmisc/xattrat.c
-++++ b/libmisc/xattrat.c
-+@@ -15,6 +15,19 @@
-+ 
-+ #include "config.h"
-+ 
-++#include <linux/version.h>
-++#include <linux/types.h>
-++#include <linux/xattr.h>
-++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 13, 0)
-++struct xattr_args {
-++    __u64 value;
-++    __u32 size;
-++    __u32 flags;
-++};
-++#ifndef XATTR_ARGS_SIZE_VER0
-++#define XATTR_ARGS_SIZE_VER0 16
-++#endif
-++#endif
-++
-+ #include <errno.h>
-+ #include <fcntl.h>
-+ #include <stdlib.h>
+--- a/utils/attr/Makefile
++++ b/utils/attr/Makefile
+@@ -40,3 +40,5 @@
++
++TARGET_CFLAGS += -DXATTR_ARGS_SIZE_VER0=16 -include linux/types.h -include linux/xattr.h
