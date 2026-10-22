@@ -80,45 +80,37 @@ if [[ -f "feeds/packages/libs/glib2/Makefile" ]]; then
     feeds/packages/libs/glib2/Makefile
 fi
 
-# 2d. Fix attr 2.6.0 build on kernels < 6.13 (missing struct xattr_args in UAPI <linux/xattr.h>)
-if [[ -d "feeds/packages/utils/attr" ]]; then
-  log::info "Adding struct xattr_args fallback patch for attr 2.6.0"
-  mkdir -p feeds/packages/utils/attr/patches
-  cat << 'EOF' > feeds/packages/utils/attr/patches/100-fix-missing-xattr_args.patch
---- a/libmisc/xattrat.c
-+++ b/libmisc/xattrat.c
-@@ -15,6 +15,16 @@
- 
- #include "config.h"
- 
-+#include <linux/types.h>
-+#include <linux/xattr.h>
-+#ifndef XATTR_ARGS_SIZE_VER0
-+struct xattr_args {
-+__u64 value;
-+__u32 size;
-+__u32 flags;
-+};
-+#define XATTR_ARGS_SIZE_VER0 16
-+#endif
-+
- #include <errno.h>
- #include <fcntl.h>
- #include <stdlib.h>
-EOF
+# Detect active kernel version in target/linux/qualcommax/Makefile (e.g. 6.12 vs 6.18)
+kver="$(sed -n 's/^KERNEL_PATCHVER:=\([0-9]\+\.[0-9]\+\).*/\1/p' target/linux/qualcommax/Makefile | head -n 1)"
+if grep -q '^CONFIG_TESTING_KERNEL=y' "$BUILDER_REPO/$DEVICE_DIR/config" 2>/dev/null; then
+  tkver="$(sed -n 's/^KERNEL_TESTING_PATCHVER:=\([0-9]\+\.[0-9]\+\).*/\1/p' target/linux/qualcommax/Makefile | head -n 1)"
+  [[ -n "$tkver" ]] && kver="$tkver"
 fi
+log::info "Detected target kernel version: ${kver:-unknown}"
 
-# 2e. Apply local patches to feed packages (patches/feeds/*/*.patch) if present
+# 2d. Apply local patches to feed packages (patches/feeds/*/*.patch)
 shopt -s nullglob
 for p in "$BUILDER_REPO"/patches/feeds/*/*.patch; do
+  patch_name="$(basename "$p")"
   feed="feeds/$(basename "$(dirname "$p")")"
+
+  # Apply older-kernel patches (like attr xattr_args) ONLY on kernel 6.12, skip on 6.18+
+  if [[ "$patch_name" == *"older-kernels"* && "${kver:-}" != "6.12" ]]; then
+    log::info "Skipping $patch_name (not needed for kernel ${kver:-unknown})"
+    continue
+  fi
+
+  if [[ "$patch_name" == *"attr-fix-xattr_args"* && -f "feeds/packages/utils/attr/Makefile" ]]; then
+    sed -i 's/-DXATTR_ARGS_SIZE_VER0=16//g' feeds/packages/utils/attr/Makefile || true
+  fi
+
   if patch -p1 -d "$feed" --dry-run --forward < "$p" >/dev/null 2>&1; then
-    log::info "Patching $feed with $(basename "$p")"
+    log::info "Patching $feed with $patch_name"
     patch -p1 -d "$feed" --forward < "$p"
   elif patch -p1 -d "$feed" --dry-run --reverse < "$p" >/dev/null 2>&1; then
-    log::info "Skipping $(basename "$p") (already applied)"
+    log::info "Skipping $patch_name (already applied)"
   else
-    log::die "$(basename "$p") does not apply to $feed"
+    log::die "$patch_name does not apply to $feed"
   fi
 done
 shopt -u nullglob

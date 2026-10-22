@@ -430,12 +430,9 @@ jobs:
             sleep 5
           done
 
-      - name: Update and install feeds + disable packages
+      - name: Disable broken kernel/telephony packages
         working-directory: openwrt
         run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
           echo "### Usuwanie pakietów dahdi-linux, rtl8812au-ct, xdp-tools ponieważ nie kompilują się!###"
           rm -rf package/feeds/telephony/dahdi-linux
           rm -rf package/kernel/rtl8812au-ct
