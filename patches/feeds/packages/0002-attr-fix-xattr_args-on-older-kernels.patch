@@ -1,11 +1,35 @@
---- a/utils/attr/Makefile
-+++ b/utils/attr/Makefile
-@@ -40,3 +40,8 @@
- 
-+TARGET_CFLAGS += -D'XATTR_ARGS_SIZE_VER0=16'
-+
-+define Build/Prepare
-+	$(call Build/Prepare/Default)
-+	rm -f $(PKG_BUILD_DIR)/patches/100-fix-missing-xattr_args.patch
-+endef
-+
+--- a/utils/attr/patches/100-fix-missing-xattr_args.patch
++++ b/utils/attr/patches/100-fix-missing-xattr_args.patch
+@@ -1,23 +1,18 @@
+ --- a/libmisc/xattrat.c
+ +++ b/libmisc/xattrat.c
+-@@ -15,6 +15,16 @@
+- 
+- #include "config.h"
+- 
+-+#include <linux/types.h>
+-+#include <linux/xattr.h>
+-+#ifndef XATTR_ARGS_SIZE_VER0
+-+struct xattr_args {
+-+    __u64 value;
+-+    __u32 size;
+-+    __u32 flags;
+-+};
+-+#define XATTR_ARGS_SIZE_VER0 16
+-+#endif
+-+
+- #include <errno.h>
+- #include <fcntl.h>
+- #include <stdlib.h>
++@@ -14,6 +14,12 @@
++ #include <string.h>
++ #include "config.h"
++ 
+++#include <linux/types.h>
+++#ifndef XATTR_ARGS_SIZE_VER0
+++#define XATTR_ARGS_SIZE_VER0 16
+++#endif
+++
++ #include <errno.h>
++ #include <fcntl.h>
++ #include <stdlib.h>
