@@ -1,18 +1,16 @@
---- a/utils/attr/patches/100-fix-missing-xattr_args.patch
-+++ b/utils/attr/patches/100-fix-missing-xattr_args.patch
+--- /dev/null
++++ b/utils/attr/patches/200-kernel-6-12-compat.patch
 @@ -0,0 +1,18 @@
 +--- a/libmisc/xattrat.c
 ++++ b/libmisc/xattrat.c
-+@@ -14,6 +14,15 @@
++@@ -14,6 +14,12 @@
 + #include <string.h>
 + #include "config.h"
 + 
 ++#include <linux/version.h>
 ++#if (LINUX_VERSION_CODE >= 396288) && (LINUX_VERSION_CODE < 396544)
 ++#include <linux/types.h>
-++#ifndef XATTR_ARGS_SIZE_VER0
 ++#define XATTR_ARGS_SIZE_VER0 16
-++#endif
 ++#endif
 ++
 + #include <errno.h>
