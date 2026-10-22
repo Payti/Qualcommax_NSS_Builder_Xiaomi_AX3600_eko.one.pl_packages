@@ -1,5 +1,11 @@
 --- a/utils/attr/Makefile
 +++ b/utils/attr/Makefile
-@@ -40,3 +40,5 @@
-+
+@@ -40,3 +40,8 @@
+ 
 +TARGET_CFLAGS += -D'XATTR_ARGS_SIZE_VER0=16'
++
++define Build/Prepare
++	$(call Build/Prepare/Default)
++	rm -f $(PKG_BUILD_DIR)/patches/100-fix-missing-xattr_args.patch
++endef
++
