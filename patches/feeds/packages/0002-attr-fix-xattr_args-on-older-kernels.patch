@@ -1,17 +1,14 @@
 --- a/utils/attr/patches/100-fix-missing-xattr_args.patch
 +++ b/utils/attr/patches/100-fix-missing-xattr_args.patch
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,24 @@
 +--- a/libmisc/xattrat.c
 ++++ b/libmisc/xattrat.c
-+@@ -15,7 +15,22 @@
-+ 
++@@ -14,7 +14,16 @@
++ #include <string.h>
 + #include "config.h"
 + 
 +-#include <linux/xattr.h>
 ++#include <linux/types.h>
-++
-++/* Kernel 6.12+ compatibility block: define local struct xattr_args 
-++   to avoid header pollution and incomplete type compilation errors */
 ++#ifndef XATTR_ARGS_SIZE_VER0
 ++struct xattr_args {
 ++    __u64 value;
@@ -23,6 +20,3 @@
 + 
 + #include <errno.h>
 + #include <fcntl.h>
-+ #include <stdlib.h>
-+ #include <string.h>
-+ #include <sys/stat.h>
