@@ -1,10 +1,10 @@
 --- a/utils/attr/patches/100-fix-missing-xattr_args.patch
 +++ b/utils/attr/patches/100-fix-missing-xattr_args.patch
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,24 @@
 +--- a/libmisc/xattrat.c
 ++++ b/libmisc/xattrat.c
-+@@ -15,6 +15,16 @@
-+ 
++@@ -14,6 +14,16 @@
++ #include <string.h>
 + #include "config.h"
 + 
 ++#include <linux/types.h>
