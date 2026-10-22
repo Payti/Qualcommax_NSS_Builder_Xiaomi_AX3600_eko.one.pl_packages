@@ -80,35 +80,7 @@ if [[ -f "feeds/packages/libs/glib2/Makefile" ]]; then
     feeds/packages/libs/glib2/Makefile
 fi
 
-# 2d. Fix attr 2.6.0 build on kernels < 6.13 (missing struct xattr_args in UAPI <linux/xattr.h>)
-if [[ -d "feeds/packages/utils/attr" ]]; then
-  log::info "Adding struct xattr_args fallback patch for attr 2.6.0"
-  mkdir -p feeds/packages/utils/attr/patches
-  cat << 'EOF' > feeds/packages/utils/attr/patches/100-fix-missing-xattr_args.patch
---- a/libmisc/xattrat.c
-+++ b/libmisc/xattrat.c
-@@ -15,6 +15,16 @@
- 
- #include "config.h"
- 
-+#include <linux/types.h>
-+#include <linux/xattr.h>
-+#ifndef XATTR_ARGS_SIZE_VER0
-+struct xattr_args {
-+__u64 value;
-+__u32 size;
-+__u32 flags;
-+};
-+#define XATTR_ARGS_SIZE_VER0 16
-+#endif
-+
- #include <errno.h>
- #include <fcntl.h>
- #include <stdlib.h>
-EOF
-fi
-
-# 2e. Apply local patches to feed packages (patches/feeds/*/*.patch) if present
+# 2d. Apply local patches to feed packages (patches/feeds/*/*.patch) if present
 shopt -s nullglob
 for p in "$BUILDER_REPO"/patches/feeds/*/*.patch; do
   feed="feeds/$(basename "$(dirname "$p")")"
