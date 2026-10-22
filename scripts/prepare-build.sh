@@ -119,6 +119,11 @@ log::info "Installing all feeds"
 rm -rf tmp
 ./scripts/feeds install -a -f
 
+log::info "Removing broken kernel/telephony packages (dahdi-linux, rtl8812au-ct, xdp-tools)"
+rm -rf feeds/telephony/libs/dahdi-linux package/feeds/telephony/dahdi-linux
+rm -rf package/kernel/rtl8812au-ct
+rm -rf package/network/utils/xdp-tools
+
 # 3. Drop in device .config and resolve.
 log::info "Loading device config: $DEVICE_DIR/config"
 cp "$BUILDER_REPO/$DEVICE_DIR/config" .config
