@@ -13,6 +13,9 @@
 ++	__u64 value;
 ++	__u32 size;
 ++	__u32 flags;
+++	__u64 value;
+++	__u32 size;
+++	__u32 flags;
 ++};
 ++#endif
 + #include <fcntl.h>
