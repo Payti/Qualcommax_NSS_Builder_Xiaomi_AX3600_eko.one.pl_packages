@@ -100,8 +100,8 @@ for p in "$BUILDER_REPO"/patches/feeds/*/*.patch; do
     continue
   fi
 
-  if [[ "$patch_name" == *"attr-fix-xattr_args"* && -f "feeds/packages/utils/attr/Makefile" ]]; then
-    sed -i 's/-DXATTR_ARGS_SIZE_VER0=16//g' feeds/packages/utils/attr/Makefile || true
+  if [[ "$patch_name" == *"attr-fix-xattr_args"* ]]; then
+    sed -i 's/-DXATTR_ARGS_SIZE_VER0=16//g' feeds/packages/utils/attr/Makefile feeds/packages/utils/acl/Makefile 2>/dev/null || true
   fi
 
   if patch -p1 -d "$feed" --dry-run --forward < "$p" >/dev/null 2>&1; then
