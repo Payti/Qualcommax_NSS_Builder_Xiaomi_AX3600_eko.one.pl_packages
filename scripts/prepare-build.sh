@@ -92,6 +92,7 @@ log::info "Detected target kernel version: ${kver:-unknown}"
 if [[ -f "feeds/nss_packages/qca-ssdk-shell/Makefile" ]]; then
   log::info "Patching qca-ssdk-shell Makefile (enforce -j1 and strip -Werror)"
   sed -i 's/PKG_BUILD_PARALLEL:=1/PKG_BUILD_PARALLEL:=0/g' feeds/nss_packages/qca-ssdk-shell/Makefile
+  # shellcheck disable=SC2016
   sed -i '/include $(TOPDIR)\/rules.mk/a PKG_BUILD_PARALLEL:=0' feeds/nss_packages/qca-ssdk-shell/Makefile
   # shellcheck disable=SC2016
   sed -i 's/\$(MAKE)/\$(MAKE) -j1/g' feeds/nss_packages/qca-ssdk-shell/Makefile
