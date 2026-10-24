@@ -92,9 +92,11 @@ log::info "Detected target kernel version: ${kver:-unknown}"
 if [[ -f "feeds/nss_packages/qca-ssdk-shell/Makefile" ]]; then
   log::info "Patching qca-ssdk-shell Makefile for GCC 15 and single-threaded dep generation"
   sed -i 's/PKG_BUILD_PARALLEL:=1/PKG_BUILD_PARALLEL:=0/g' feeds/nss_packages/qca-ssdk-shell/Makefile
+  # shellcheck disable=SC2016
   grep -q 'PKG_BUILD_PARALLEL' feeds/nss_packages/qca-ssdk-shell/Makefile || \
     sed -i '/include $(INCLUDE_DIR)\/package.mk/i PKG_BUILD_PARALLEL:=0' feeds/nss_packages/qca-ssdk-shell/Makefile
   if ! grep -q 'Build/Prepare' feeds/nss_packages/qca-ssdk-shell/Makefile; then
+    # shellcheck disable=SC2016
     printf '\ndefine Build/Prepare\n\t$(call Build/Prepare/Default)\n\tfind $(PKG_BUILD_DIR) -type f \\( -name "*.mk" -o -name "Makefile*" \\) -exec sed -i "s/-Werror//g" {} +\nendef\n' \
       >> feeds/nss_packages/qca-ssdk-shell/Makefile
   fi
