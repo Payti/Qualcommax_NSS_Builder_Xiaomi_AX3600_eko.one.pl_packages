@@ -88,18 +88,16 @@ if grep -q '^CONFIG_TESTING_KERNEL=y' "$BUILDER_REPO/$DEVICE_DIR/config" 2>/dev/
 fi
 log::info "Detected target kernel version: ${kver:-unknown}"
 
-# 2c-ssdk. Fix qca-ssdk-shell build on GCC 15 (disable -Werror and parallel .d race)
+# 2c-ssdk. Fix qca-ssdk-shell parallel build race (fal_init.d) and GCC 15 -Werror
 if [[ -f "feeds/nss_packages/qca-ssdk-shell/Makefile" ]]; then
-  log::info "Patching qca-ssdk-shell Makefile for GCC 15 and single-threaded dep generation"
+  log::info "Patching qca-ssdk-shell Makefile (enforce -j1 and strip -Werror)"
   sed -i 's/PKG_BUILD_PARALLEL:=1/PKG_BUILD_PARALLEL:=0/g' feeds/nss_packages/qca-ssdk-shell/Makefile
+  sed -i '/include $(TOPDIR)\/rules.mk/a PKG_BUILD_PARALLEL:=0' feeds/nss_packages/qca-ssdk-shell/Makefile
   # shellcheck disable=SC2016
-  grep -q 'PKG_BUILD_PARALLEL' feeds/nss_packages/qca-ssdk-shell/Makefile || \
-    sed -i '/include $(INCLUDE_DIR)\/package.mk/i PKG_BUILD_PARALLEL:=0' feeds/nss_packages/qca-ssdk-shell/Makefile
-  if ! grep -q 'Build/Prepare' feeds/nss_packages/qca-ssdk-shell/Makefile; then
-    # shellcheck disable=SC2016
-    printf '\ndefine Build/Prepare\n\t$(call Build/Prepare/Default)\n\tfind $(PKG_BUILD_DIR) -type f \\( -name "*.mk" -o -name "Makefile*" \\) -exec sed -i "s/-Werror//g" {} +\nendef\n' \
-      >> feeds/nss_packages/qca-ssdk-shell/Makefile
-  fi
+  sed -i 's/\$(MAKE)/\$(MAKE) -j1/g' feeds/nss_packages/qca-ssdk-shell/Makefile
+  # shellcheck disable=SC2016
+  sed -i '/^\$(eval \$(call BuildPackage/i define Build/Prepare\n\t\$(call Build/Prepare/Default)\n\tfind \$(PKG_BUILD_DIR) -type f \\( -name "*.mk" -o -name "Makefile*" \\) -exec sed -i "s/-Werror//g" {} +\nendef\n' \
+    feeds/nss_packages/qca-ssdk-shell/Makefile
 fi
 
 # 2d. Apply local patches to feed packages (patches/feeds/*/*.patch)
