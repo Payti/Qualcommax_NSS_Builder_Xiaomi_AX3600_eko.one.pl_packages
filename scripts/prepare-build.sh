@@ -95,7 +95,7 @@ if [[ -f "feeds/nss_packages/qca-ssdk-shell/Makefile" ]]; then
   # shellcheck disable=SC2016
   sed -i '/include $(TOPDIR)\/rules.mk/a PKG_BUILD_PARALLEL:=0' feeds/nss_packages/qca-ssdk-shell/Makefile
   # shellcheck disable=SC2016
-  sed -i '/^\$(eval \$(call BuildPackage/i define Build/Prepare\n\t\$(call Build/Prepare/Default)\n\tfind \$(PKG_BUILD_DIR) -type f \\( -name "*.mk" -o -name "Makefile*" \\) -exec sed -i "s/-Werror//g; s|\$(OBJ_PATH)/%\\.d||g; s|\$(DST_DIR)/%\\.d||g; s|^-include.*DEP.*||g; s|^sinclude.*DEP.*||g" {} +\nendef\n' \
+  sed -i '/^\$(eval \$(call BuildPackage/i define Build/Prepare\n\t\$(call Build/Prepare/Default)\n\tfind \$(PKG_BUILD_DIR) -type f \\( -name "*.mk" -o -name "Makefile*" \\) -exec sed -i "s/-Werror//g; s|[^ ]*/%\\.d||g; s|^[[:space:]]*-*s*include.*DEP|#disabled|g" {} +\nendef\n' \
     feeds/nss_packages/qca-ssdk-shell/Makefile
 fi
 
