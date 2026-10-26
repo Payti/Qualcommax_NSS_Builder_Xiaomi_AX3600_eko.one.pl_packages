@@ -88,6 +88,20 @@ if grep -q '^CONFIG_TESTING_KERNEL=y' "$BUILDER_REPO/$DEVICE_DIR/config" 2>/dev/
 fi
 log::info "Detected target kernel version: ${kver:-unknown}"
 
+# 2c-crc32c. Restore +kmod-lib-crc32c dependency for batman-adv and openvswitch on kernel 6.12
+if [[ "${kver:-}" == "6.12" ]]; then
+  if [[ -f "feeds/packages/net/batman-adv/Makefile" ]]; then
+    log::info "Ensuring kmod-batman-adv has +kmod-lib-crc32c dependency on kernel 6.12"
+    sed -i '/^define KernelPackage\/batman-adv$/,/^endef$/ { /DEPENDS:=/ { /kmod-lib-crc32c/! s/DEPENDS:=.*/& +kmod-lib-crc32c/ } }' \
+      feeds/packages/net/batman-adv/Makefile
+  fi
+  if [[ -f "feeds/packages/net/openvswitch/Makefile" ]]; then
+    log::info "Ensuring kmod-openvswitch has +kmod-lib-crc32c dependency on kernel 6.12"
+    sed -i 's/+kmod-mpls/+kmod-mpls +kmod-lib-crc32c/g' \
+      feeds/packages/net/openvswitch/Makefile
+  fi
+fi
+
 # 2c-ssdk. Fix qca-ssdk-shell build on GNU Make 4.4 / GCC 15 (disable broken .d deps and -Werror)
 if [[ -f "feeds/nss_packages/qca-ssdk-shell/Makefile" ]]; then
   log::info "Patching qca-ssdk-shell Makefile (disable broken .d dependency rules and -Werror)"
